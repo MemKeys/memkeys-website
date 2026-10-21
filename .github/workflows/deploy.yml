@@ -1,0 +1,75 @@
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  # Allow the code repo to trigger a republish when its docs/ change.
+  repository_dispatch:
+    types: [docs-updated]
+
+# Allow the workflow to publish to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never run two Pages deployments at once; let a newer one supersede a queued one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout website
+        uses: actions/checkout@v4
+
+      # Ingest the code repo's docs/ as the docs source of truth (sparse).
+      - name: Checkout code-repo docs
+        uses: actions/checkout@v4
+        with:
+          repository: MemKeys/memkeys
+          ref: main
+          sparse-checkout: docs
+          sparse-checkout-cone-mode: false
+          path: .memkeys
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      # Build-time Mermaid rendering (rev 3) drives a headless Chromium.
+      - name: Install Chromium for Mermaid
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        # astro build runs the sync-docs prebuild hook, which reads .memkeys/docs.
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: deploy
+    # Only publish from main / dispatch — PRs build (above) to gate, never deploy.
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
