@@ -9,12 +9,17 @@ import '@fontsource/ibm-plex-sans/latin-600.css';
 import '@fontsource/ibm-plex-sans/latin-700.css';
 import '@fontsource/ibm-plex-mono/latin-400.css';
 import '@fontsource/ibm-plex-mono/latin-600.css';
-import lockupReverse from '../assets/lockup-reverse.svg';
-import heroVisual from '../assets/landing/hero-visual.svg';
-import architectureDiagram from '../assets/landing/architecture.svg';
-import stepRun from '../assets/landing/how-step-1-run.svg';
-import stepConnect from '../assets/landing/how-step-2-connect.svg';
-import stepBrowse from '../assets/landing/how-step-3-browse.svg';
+// NB: import with the explicit `?url` suffix. A bare `.svg` import in an .astro
+// page is intercepted by astro:assets, whose SSR default export is an Astro
+// *component* (createSvgComponent) — passing that to <img src> stringifies the
+// component factory and every image 404s (ISI-6505). `?url` opts out of the
+// astro:assets ESM plugin and yields the built asset URL instead.
+import lockupReverse from '../assets/lockup-reverse.svg?url';
+import heroVisual from '../assets/landing/hero-visual.svg?url';
+import architectureDiagram from '../assets/landing/architecture.svg?url';
+import stepRun from '../assets/landing/how-step-1-run.svg?url';
+import stepConnect from '../assets/landing/how-step-2-connect.svg?url';
+import stepBrowse from '../assets/landing/how-step-3-browse.svg?url';
 
 // Keep in sync with astro.config.mjs (SITE/BASE env override for a future
 // custom domain — see landing-copy.md §1 "template the base URL").
