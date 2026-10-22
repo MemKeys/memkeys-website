@@ -1,6 +1,7 @@
 ---
 title: What is MemKeys?
 description: An open, attribute-keyed memory server for AI agents — facts keyed by what they are about, with temporal validity, and graph + vector as derived views.
+slug: docs/what-is-memkeys
 sidebar:
   order: 1
 ---

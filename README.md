@@ -15,9 +15,14 @@ Starlight renders everything under `src/content/docs/`. There are two sources,
 and they coexist without collision:
 
 1. **Hand-authored site pages** — committed directly under `src/content/docs/`
-   (e.g. `index.mdx` landing, and the end-user pages `what-is-memkeys.md`,
-   `getting-started.md`, `crd-reference.md`, …). These are authored here with
-   Starlight frontmatter (`title` / `description` / `sidebar.order`).
+   (the end-user pages `what-is-memkeys.md`, `getting-started.md`,
+   `crd-reference.md`, …). These are authored here with
+   Starlight frontmatter (`title` / `description` / `sidebar.order`). Every
+   page carries a `slug: docs/…` override so the docs app is served under
+   `/docs/*` (the landing page owns the site root — see below).
+   The **landing page is not a docs page**: it lives at
+   [`src/pages/index.astro`](src/pages/index.astro) (a standalone Astro page
+   that outranks Starlight's catch-all route at `/`).
 2. **Ingested engineering docs** — the code repo
    ([`MemKeys/memkeys`](https://github.com/MemKeys/memkeys)) `docs/` tree is the
    source of truth for deeper engineering/reference docs. They are **ingested at
@@ -75,10 +80,13 @@ directly in the HTML, so it serves correctly under the Pages base path. Saved
 
 The landing visual/UX design (M4a · ISI-6399) is staged in
 [`design/`](design/) — `mockup.html` is the layout source of truth, with the
-hero/architecture/how-to SVGs in `design/assets/`. The assemble milestone
-(M5 · ISI-6402) wires those assets and the landing copy (M4b · ISI-6400) into
-the Astro landing. This scaffold ships a branded splash placeholder in the
-meantime.
+hero/architecture/how-to SVGs in `design/assets/`. The landing (M5 · ISI-6479)
+assembles that design and the copy deck (M4b · ISI-6400,
+[`content/landing-copy.md`](content/landing-copy.md)) into
+[`src/pages/index.astro`](src/pages/index.astro); the subset of design SVGs it
+serves is copied to [`src/assets/landing/`](src/assets/landing/) and bundled
+(hashed) by Astro, and fonts are self-hosted via `@fontsource/ibm-plex-*`.
+`design/` itself remains the handoff record, not a served path.
 
 ## Brand
 

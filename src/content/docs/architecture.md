@@ -1,6 +1,7 @@
 ---
 title: Architecture
 description: How a fact flows from the wire into a single Postgres and back out through four retrieval operations — the fact envelope, keyed-first storage, the write pipeline, and the four-op contract.
+slug: docs/architecture
 sidebar:
   order: 2
 ---

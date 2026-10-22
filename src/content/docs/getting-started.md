@@ -1,6 +1,7 @@
 ---
 title: Getting started
 description: Bring up Postgres + MemKeys with Docker Compose, make your first store / fetch / traverse / search calls against /memory/*, and browse memory with the Inspector UI.
+slug: docs/getting-started
 sidebar:
   order: 3
 ---

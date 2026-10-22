@@ -1,6 +1,7 @@
 ---
 title: CRD reference — MemKeysInstance
 description: Every spec field of the MemKeysInstance custom resource (memkeys.io/v1alpha1), its status conditions, and when to pick the operator over the Helm chart.
+slug: docs/crd-reference
 sidebar:
   order: 5
 ---

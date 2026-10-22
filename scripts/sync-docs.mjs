@@ -110,13 +110,17 @@ async function main() {
       out = raw;
     } else {
       // Plain engineering Markdown — inject the minimal frontmatter Starlight
-      // needs, deriving the title from the first H1.
+      // needs, deriving the title from the first H1. The slug nests the page
+      // under /docs/ so the landing page (src/pages/index.astro, M5 · ISI-6479)
+      // owns the site root.
       const title = deriveTitle(raw, rel);
       const body = stripFirstH1(raw, title);
+      const slug = `docs/reference/${rel.replace(/\.md$/, '').replace(/\\/g, '/')}`;
       out =
         [
           '---',
           `title: ${yamlQuote(title)}`,
+          `slug: ${slug}`,
           `editUrl: ${EDIT_BASE}/${rel}`,
           '---',
           '',

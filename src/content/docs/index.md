@@ -1,6 +1,7 @@
 ---
 title: MemKeys documentation
 description: End-user documentation set for MemKeys — the attribute-keyed memory server for AI agents.
+slug: docs
 sidebar:
   order: 0
 ---

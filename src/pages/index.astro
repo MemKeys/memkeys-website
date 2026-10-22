@@ -1,0 +1,919 @@
+---
+// MemKeys landing page — assembled in M5 (ISI-6479) from:
+//   · content/landing-copy.md (ISI-6400, M4b) — the authoritative copy deck
+//   · design/mockup.html + design/README.md (ISI-6399, M4a) — layout source of truth
+// Docs (Starlight) live under /docs/*; this page owns /.
+import '@fontsource/ibm-plex-sans/latin-400.css';
+import '@fontsource/ibm-plex-sans/latin-500.css';
+import '@fontsource/ibm-plex-sans/latin-600.css';
+import '@fontsource/ibm-plex-sans/latin-700.css';
+import '@fontsource/ibm-plex-mono/latin-400.css';
+import '@fontsource/ibm-plex-mono/latin-600.css';
+import lockupReverse from '../assets/lockup-reverse.svg';
+import heroVisual from '../assets/landing/hero-visual.svg';
+import architectureDiagram from '../assets/landing/architecture.svg';
+import stepRun from '../assets/landing/how-step-1-run.svg';
+import stepConnect from '../assets/landing/how-step-2-connect.svg';
+import stepBrowse from '../assets/landing/how-step-3-browse.svg';
+
+// Keep in sync with astro.config.mjs (SITE/BASE env override for a future
+// custom domain — see landing-copy.md §1 "template the base URL").
+const site = process.env.SITE ?? 'https://memkeys.github.io';
+const base = (process.env.BASE ?? '/memkeys-website').replace(/\/+$/, '');
+const canonical = `${site}${base}/`;
+const ogImage = `${site}${base}/og.png`;
+const repo = 'https://github.com/MemKeys/memkeys';
+const docs = `${base}/docs/`;
+const quickstartDoc = `${docs}getting-started/`;
+const inspectorAnchor = `${quickstartDoc}#4-browse-with-the-inspector-ui`;
+const mcpDoc = `${docs}reference/agent-mcp-transport/`;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  name: 'MemKeys',
+  applicationCategory: 'DeveloperApplication',
+  operatingSystem: 'Linux, macOS, Docker, Kubernetes',
+  description:
+    'Open-source, attribute-based memory server for AI agents. Facts keyed by agent-supplied attributes with temporal validity; graph and vector as derived views. Open contract, pluggable backends.',
+  url: canonical,
+  license: 'https://opensource.org/licenses/Apache-2.0',
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MemKeys — Keyed memory for AI agents</title>
+    <meta
+      name="description"
+      content="MemKeys is an open-source, attribute-based memory server for AI agents. Store each fact by the keys that describe it — with temporal validity — and retrieve it by address. Graph and vector are derived views. Open contract, pluggable backends."
+    />
+    <meta
+      name="keywords"
+      content="agent memory, AI agent memory, keyed memory, attribute-based memory, temporal memory, vector database alternative, knowledge graph, open source"
+    />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#17356F" />
+    <link rel="icon" type="image/svg+xml" href={`${base}/favicon.svg`} />
+    <link rel="icon" sizes="32x32" href={`${base}/favicon.ico`} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MemKeys" />
+    <meta property="og:title" content="MemKeys — Keyed memory for AI agents" />
+    <meta
+      property="og:description"
+      content="Every fact has an address. An open-source, attribute-based memory server for AI agents — keyed, temporal, with graph + vector as derived views."
+    />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="MemKeys — keyed memory for agents. Every fact has an address."
+    />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="MemKeys — Keyed memory for AI agents" />
+    <meta
+      name="twitter:description"
+      content="Every fact has an address. Open-source, attribute-based memory server for agents — keyed, temporal, graph + vector as derived views."
+    />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content="MemKeys — keyed memory for agents." />
+    <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />
+
+    <style is:global>
+      /* Landing styles — adapted 1:1 from design/mockup.html (ISI-6399).
+       * Scoped under .mk-landing so the docs app (Starlight) is untouched. */
+      /* html/body are unscoped: this is a standalone page and body carries the
+       * .mk-landing class, so descendant selectors like `.mk-landing html`
+       * would never match. */
+      html {
+        scroll-behavior: smooth;
+      }
+      body.mk-landing {
+        margin: 0;
+      }
+      .mk-landing {
+        --ink: #17356f;
+        --ink-2: #3e6fd9;
+        --accent: #f7c948;
+        --ground: #0b1830;
+        --ground-2: #13294f;
+        --line-dark: #2a4a86;
+        --paper: #f7f4ec;
+        --reverse: #eaf1ff;
+        --muted: #4a618c;
+        --muted-d: #8aa6d8;
+        --r-s: 10px;
+        --r-m: 16px;
+        --r-l: 24px;
+        --maxw: 1120px;
+        box-sizing: border-box;
+        font-family: 'IBM Plex Sans', system-ui, sans-serif;
+        color: var(--ink);
+        background: #fff;
+        -webkit-font-smoothing: antialiased;
+        line-height: 1.55;
+      }
+      .mk-landing *,
+      .mk-landing *::before,
+      .mk-landing *::after {
+        box-sizing: border-box;
+      }
+      .mk-landing section[id] {
+        scroll-margin-top: 24px;
+      }
+      .mk-landing .mono,
+      .mk-landing code {
+        font-family: 'IBM Plex Mono', ui-monospace, monospace;
+      }
+      .mk-landing .wrap {
+        max-width: var(--maxw);
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      .mk-landing a {
+        color: inherit;
+      }
+      .mk-landing .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        border-radius: var(--r-s);
+        padding: 13px 22px;
+        font-size: 15px;
+        transition: transform 0.08s ease;
+      }
+      .mk-landing .btn-primary {
+        background: var(--accent);
+        color: #0b1830;
+      }
+      .mk-landing .btn-ghost {
+        border: 1.5px solid var(--muted-d);
+        color: var(--reverse);
+      }
+      .mk-landing .btn-ink {
+        border: 1.5px solid var(--ink);
+        color: var(--ink);
+      }
+
+      /* ---------- NAV ---------- */
+      .mk-landing .mk-header {
+        background: var(--ground);
+      }
+      .mk-landing .mk-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 68px;
+      }
+      .mk-landing .mk-nav .lockup {
+        height: 30px;
+        width: auto;
+        display: block;
+      }
+      .mk-landing .mk-nav .links {
+        display: flex;
+        gap: 28px;
+        align-items: center;
+      }
+      .mk-landing .mk-nav .links a {
+        color: var(--muted-d);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 15px;
+      }
+      .mk-landing .mk-nav .links a:hover {
+        color: var(--reverse);
+      }
+      .mk-landing .mk-nav .links a.btn {
+        color: #0b1830;
+        padding: 9px 16px;
+        font-size: 14px;
+      }
+
+      /* Mobile menu (design README §3: collapse to lockup + hamburger → the
+       * same links). Pure <details>, no JS. */
+      .mk-landing .menu {
+        display: none;
+        position: relative;
+      }
+      .mk-landing .menu summary {
+        list-style: none;
+        cursor: pointer;
+        color: var(--muted-d);
+        display: flex;
+        align-items: center;
+        height: 40px;
+        padding: 0 11px;
+        border: 1px solid var(--line-dark);
+        border-radius: var(--r-s);
+      }
+      .mk-landing .menu summary::-webkit-details-marker {
+        display: none;
+      }
+      .mk-landing .menu[open] summary {
+        color: var(--reverse);
+      }
+      .mk-landing .menu-links {
+        position: absolute;
+        right: 0;
+        top: calc(100% + 10px);
+        background: var(--ground-2);
+        border: 1px solid var(--line-dark);
+        border-radius: var(--r-m);
+        padding: 14px 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        min-width: 200px;
+        z-index: 10;
+      }
+      .mk-landing .menu-links a {
+        color: var(--muted-d);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 15px;
+      }
+      .mk-landing .menu-links a:hover {
+        color: var(--reverse);
+      }
+      .mk-landing .menu-links a.btn {
+        color: #0b1830;
+        justify-content: center;
+      }
+
+      /* ---------- HERO ---------- */
+      .mk-landing .hero {
+        background: var(--ground);
+        color: var(--reverse);
+        overflow: hidden;
+      }
+      .mk-landing .hero .grid {
+        display: grid;
+        grid-template-columns: 1.05fr 0.95fr;
+        gap: 40px;
+        align-items: center;
+        padding: 72px 0 96px;
+      }
+      .mk-landing .eyebrow {
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        font-weight: 600;
+        margin: 0 0 18px;
+      }
+      .mk-landing .hero h1 {
+        font-size: 60px;
+        line-height: 1.02;
+        letter-spacing: -0.02em;
+        margin: 0 0 20px;
+        font-weight: 700;
+      }
+      .mk-landing .hero h1 .k {
+        color: var(--accent);
+      }
+      .mk-landing .hero p.lede {
+        font-size: 19px;
+        color: #c7d4ec;
+        max-width: 34ch;
+        margin: 0 0 32px;
+      }
+      .mk-landing .cta-row {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+      .mk-landing .hero-art {
+        width: 100%;
+        height: auto;
+      }
+      .mk-landing .trust {
+        margin-top: 34px;
+        display: flex;
+        gap: 22px;
+        align-items: center;
+        color: var(--muted-d);
+        font-size: 13px;
+      }
+      .mk-landing .trust .mono {
+        color: #c7d4ec;
+      }
+
+      /* ---------- VALUE PROPS (copy deck §3) ---------- */
+      .mk-landing .values {
+        background: var(--ground);
+        padding: 0 0 96px;
+      }
+      .mk-landing .values .cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+      .mk-landing .values .card {
+        background: var(--ground-2);
+        border: 1px solid var(--line-dark);
+        border-radius: var(--r-m);
+        padding: 28px;
+      }
+      .mk-landing .values .card h3 {
+        color: var(--reverse);
+        font-size: 18px;
+        margin: 0 0 10px;
+      }
+      .mk-landing .values .card p {
+        color: var(--muted-d);
+        font-size: 15px;
+        margin: 0;
+      }
+
+      /* ---------- SECTION SHELL ---------- */
+      .mk-landing section.band {
+        padding: 88px 0;
+      }
+      .mk-landing .kicker {
+        font-size: 13px;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--ink-2);
+        font-weight: 600;
+        margin: 0 0 12px;
+      }
+      .mk-landing h2 {
+        font-size: 38px;
+        line-height: 1.1;
+        letter-spacing: -0.015em;
+        margin: 0 0 16px;
+        font-weight: 700;
+      }
+      .mk-landing .section-lede {
+        font-size: 18px;
+        color: var(--muted);
+        max-width: 60ch;
+        margin: 0 0 8px;
+      }
+
+      /* ---------- WHAT IS (copy deck §4) ---------- */
+      .mk-landing .what {
+        background: #fff;
+      }
+      .mk-landing .what .cols {
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 48px;
+        align-items: start;
+        margin-top: 24px;
+      }
+      .mk-landing .what p {
+        font-size: 16px;
+        color: var(--muted);
+        margin: 0 0 16px;
+      }
+      .mk-landing .what .aside {
+        background: var(--paper);
+        border: 1px solid #e6dec9;
+        border-radius: var(--r-m);
+        padding: 24px;
+      }
+      .mk-landing .what blockquote {
+        margin: 0 0 16px;
+        border-left: 3px solid var(--accent);
+        padding: 4px 0 4px 16px;
+        font-size: 17px;
+        font-style: italic;
+        color: var(--ink);
+      }
+      .mk-landing .what .aside p {
+        margin: 0;
+        font-size: 14px;
+      }
+      .mk-landing .what a.deep {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--ink-2);
+        text-decoration: none;
+        margin-top: 28px;
+      }
+      .mk-landing .what a.deep:hover {
+        text-decoration: underline;
+      }
+
+      /* ---------- ARCHITECTURE ---------- */
+      .mk-landing .arch {
+        background: var(--paper);
+      }
+      .mk-landing .arch .figure {
+        margin-top: 40px;
+        background: #fff;
+        border: 1px solid #e6dec9;
+        border-radius: var(--r-l);
+        padding: 20px;
+        box-shadow:
+          0 1px 0 #fff inset,
+          0 24px 48px -32px rgba(23, 53, 111, 0.35);
+      }
+      .mk-landing .arch .figure img {
+        width: 100%;
+        height: auto;
+        display: block;
+      }
+      .mk-landing .arch .cap {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+        margin-top: 28px;
+      }
+      .mk-landing .arch .cap div {
+        flex: 1 1 200px;
+        border-left: 3px solid var(--accent);
+        padding: 4px 0 4px 16px;
+      }
+      .mk-landing .arch .cap b {
+        display: block;
+        font-size: 15px;
+      }
+      .mk-landing .arch .cap span {
+        font-size: 14px;
+        color: var(--muted);
+      }
+
+      /* ---------- QUICKSTART ---------- */
+      .mk-landing .how {
+        background: #fff;
+      }
+      .mk-landing .steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 28px;
+        margin-top: 48px;
+      }
+      .mk-landing .step {
+        border: 1px solid #e3e8f2;
+        border-radius: var(--r-m);
+        padding: 28px;
+        position: relative;
+        transition:
+          border-color 0.15s,
+          transform 0.15s;
+      }
+      .mk-landing .step .num {
+        position: absolute;
+        top: 22px;
+        right: 24px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted-d);
+      }
+      .mk-landing .step img {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 18px;
+      }
+      .mk-landing .step h3 {
+        font-size: 20px;
+        margin: 0 0 8px;
+      }
+      .mk-landing .step p {
+        font-size: 15px;
+        color: var(--muted);
+        margin: 0 0 16px;
+      }
+      .mk-landing .step code {
+        background: var(--paper);
+        border: 1px solid #e6dec9;
+        border-radius: 6px;
+        padding: 2px 7px;
+        font-size: 13px;
+        color: var(--ink);
+      }
+      .mk-landing .step a.deep {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--ink-2);
+        text-decoration: none;
+      }
+      .mk-landing .step a.deep:hover {
+        text-decoration: underline;
+      }
+      .mk-landing .how .cta-row {
+        justify-content: center;
+        margin-top: 44px;
+      }
+      .mk-landing .how .cta-row a:not(.btn) {
+        color: var(--ink-2);
+        font-weight: 600;
+        font-size: 15px;
+        text-decoration: none;
+        align-self: center;
+      }
+      .mk-landing .how .cta-row a:not(.btn):hover {
+        text-decoration: underline;
+      }
+
+      /* ---------- FINAL CTA ---------- */
+      .mk-landing .final {
+        background: var(--ground);
+        color: var(--reverse);
+        text-align: center;
+        padding: 84px 0;
+      }
+      .mk-landing .final h2 {
+        font-size: 40px;
+        margin: 0 0 14px;
+      }
+      .mk-landing .final p {
+        color: #c7d4ec;
+        font-size: 18px;
+        margin: 0 0 30px;
+      }
+
+      /* ---------- FOOTER ---------- */
+      .mk-landing .mk-footer {
+        background: #071124;
+        color: var(--muted-d);
+        padding: 48px 0 40px;
+        font-size: 14px;
+      }
+      .mk-landing .foot {
+        display: flex;
+        justify-content: space-between;
+        gap: 32px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .mk-landing .foot .lockup {
+        height: 26px;
+        width: auto;
+        margin-bottom: 14px;
+        display: block;
+      }
+      .mk-landing .foot .cols {
+        display: flex;
+        gap: 56px;
+        flex-wrap: wrap;
+      }
+      .mk-landing .foot h4 {
+        color: var(--reverse);
+        font-size: 13px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin: 0 0 12px;
+      }
+      .mk-landing .foot a {
+        display: block;
+        color: var(--muted-d);
+        text-decoration: none;
+        margin-bottom: 9px;
+      }
+      .mk-landing .foot a:hover {
+        color: var(--reverse);
+      }
+      .mk-landing .foot .legal {
+        margin-top: 36px;
+        border-top: 1px solid #142746;
+        padding-top: 20px;
+        font-size: 13px;
+      }
+
+      /* ---------- RESPONSIVE ---------- */
+      @media (max-width: 860px) {
+        .mk-landing .hero .grid {
+          grid-template-columns: 1fr;
+          gap: 12px;
+          padding: 48px 0 64px;
+        }
+        .mk-landing .hero h1 {
+          font-size: 42px;
+        }
+        .mk-landing .hero-art {
+          max-width: 460px;
+        }
+        .mk-landing .mk-nav .links {
+          display: none;
+        }
+        .mk-landing .menu {
+          display: block;
+        }
+        .mk-landing .values {
+          padding-bottom: 64px;
+        }
+        .mk-landing .values .cards {
+          grid-template-columns: 1fr;
+        }
+        .mk-landing .what .cols {
+          grid-template-columns: 1fr;
+        }
+        .mk-landing .steps {
+          grid-template-columns: 1fr;
+        }
+        .mk-landing h2 {
+          font-size: 30px;
+        }
+        .mk-landing section.band {
+          padding: 60px 0;
+        }
+      }
+
+      /* Motion is hover-lift + 80ms press only — gate it (design README §5). */
+      @media (prefers-reduced-motion: no-preference) {
+        .mk-landing html {
+          scroll-behavior: smooth;
+        }
+        .mk-landing .btn:active {
+          transform: translateY(1px);
+        }
+        .mk-landing .step:hover {
+          border-color: var(--ink-2);
+          transform: translateY(-3px);
+        }
+      }
+    </style>
+  </head>
+
+  <body class="mk-landing">
+    <!-- NAV -->
+    <header class="mk-header">
+      <div class="wrap">
+        <nav class="mk-nav">
+          <a href={`${base}/`} aria-label="MemKeys home">
+            <img class="lockup" src={lockupReverse} alt="MemKeys" width="79" height="30" />
+          </a>
+          <div class="links">
+            <a href="#architecture">How it works</a>
+            <a href="#quickstart">Get started</a>
+            <a href={docs}>Docs</a>
+            <a href={repo}>GitHub</a>
+            <a class="btn btn-primary" href="#quickstart">Get started</a>
+          </div>
+          <details class="menu">
+            <summary aria-label="Open menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16"></path>
+              </svg>
+            </summary>
+            <div class="menu-links">
+              <a href="#architecture">How it works</a>
+              <a href="#quickstart">Get started</a>
+              <a href={docs}>Docs</a>
+              <a href={repo}>GitHub</a>
+              <a class="btn btn-primary" href="#quickstart">Get started</a>
+            </div>
+          </details>
+        </nav>
+      </div>
+    </header>
+
+    <!-- HERO (copy deck §2) -->
+    <section class="hero">
+      <div class="wrap">
+        <div class="grid">
+          <div>
+            <p class="eyebrow">Open-source agent memory</p>
+            <h1>Every fact has an&nbsp;<span class="k">address</span>.</h1>
+            <p class="lede">
+              MemKeys is an open-source, attribute-based memory server for AI agents. Store each
+              fact by the keys that describe it — with a validity window — and retrieve it by
+              address. No vector guesswork.
+            </p>
+            <div class="cta-row">
+              <a class="btn btn-primary" href="#quickstart">Get started →</a>
+              <a class="btn btn-ghost" href={repo}>View on GitHub</a>
+            </div>
+            <div class="trust">
+              <span>Open contract</span><span>·</span>
+              <span>Pluggable backends</span><span>·</span>
+              <span class="mono">MCP · REST</span>
+            </div>
+          </div>
+          <div>
+            <img
+              class="hero-art"
+              src={heroVisual}
+              alt="A query travels along an address and resolves to one keyed fact."
+              width="720"
+              height="560"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VALUE PROPS (copy deck §3 — three proof pillars) -->
+    <section class="values" aria-label="Why MemKeys">
+      <div class="wrap">
+        <div class="cards">
+          <div class="card">
+            <h3>Keyed-first retrieval</h3>
+            <p>
+              Reach a fact by its address, not by a similarity guess. Attribute keys — project,
+              issue, run, agent, thread — bound the candidate set before any vector or graph work
+              runs. You get the fact you meant, not the one that happened to be nearest.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Memory with a validity window</h3>
+            <p>
+              Every fact is bi-temporal: it knows when it was true and when it was recorded. Ask
+              “what did we believe on the 14th?” and get the answer from then, not whatever is
+              cached now. Superseded facts close automatically; history is never silently
+              overwritten.
+            </p>
+          </div>
+          <div class="card">
+            <h3>Open contract, pluggable backends</h3>
+            <p>
+              A small, open retrieval contract — four operations, one keyed core. Graph and vector
+              are derived, rebuildable views, not a second source of truth. Backends are
+              pluggable, with the Grail plugin as the reference implementation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHAT IS (copy deck §4) -->
+    <section class="band what" id="what-is-memkeys">
+      <div class="wrap">
+        <p class="kicker">What is MemKeys?</p>
+        <h2>Facts, keyed by what they are about.</h2>
+        <div class="cols">
+          <div>
+            <p>
+              Agents produce <em>facts</em>: a decision taken on a pull request, the outcome of a
+              run, a learning derived from telemetry, the context an agent flushes at the end of a
+              session. Every fact is <em>about something</em> — a project, an issue, a PR, an
+              agent, a run, a thread. Those “somethings” are the <strong>entities</strong>, the
+              agent-supplied attributes, and they are the primary index into memory.
+            </p>
+            <p>
+              Instead of dropping each fact into a vector blob and hoping to find it again,
+              MemKeys stores it with the keys that describe it and a window for when it was true.
+              Retrieval starts from <strong>what you know</strong> — the keys — and narrows from
+              there. Graph and vector views are built on top of that keyed core so you still get
+              relationship traversal and semantic search, but they are <em>derived
+              projections</em> you can rebuild at any time, never a parallel store that can drift.
+            </p>
+            <p>
+              <strong>Where it fits.</strong> MemKeys is a standalone, attribute-agnostic server.
+              Any agent platform is a <em>consumer</em> of its contract — it does not care whether
+              your keys are <code>project/issue/pr</code> or your own namespace convention.
+            </p>
+            <a class="deep" href={`${docs}/what-is-memkeys`}>Read the long-form version →</a>
+          </div>
+          <div class="aside">
+            <blockquote>
+              “Store each fact with the keys that describe it, and retrieve it by address — the
+              way you pull a card from a catalog.”
+            </blockquote>
+            <p>
+              One keyed, temporal store as the single source of truth; graph and vector as
+              derived, rebuildable views on top.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ARCHITECTURE (copy deck §5 + design mockup) -->
+    <section class="band arch" id="architecture">
+      <div class="wrap">
+        <p class="kicker">How it works</p>
+        <h2>Keyed first. Graph and vector are derived views.</h2>
+        <p class="section-lede">
+          Agents store facts by attribute into one keyed core. The graph and the vector index are
+          views computed on top of those facts — not separate stores you keep in sync.
+        </p>
+        <div class="figure">
+          <img
+            src={architectureDiagram}
+            alt="Agents store facts keyed by attribute into one keyed core; graph and vector are derived views on top."
+            width="1200"
+            height="640"
+            loading="lazy"
+          />
+        </div>
+        <div class="cap">
+          <div>
+            <b>Keyed core</b>
+            <span>Facts addressed by project, issue, run, agent — each with a validity window.</span>
+          </div>
+          <div>
+            <b>Graph view</b>
+            <span>Traverse relationships between keyed facts in a single hop.</span>
+          </div>
+          <div>
+            <b>Vector view</b>
+            <span>Semantic search for when you don’t yet know the key.</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- QUICKSTART (copy deck §6 + design mockup) -->
+    <section class="band how" id="quickstart">
+      <div class="wrap">
+        <p class="kicker">Get started</p>
+        <h2>Three steps to agent memory that sticks.</h2>
+        <p class="section-lede">
+          Run the server, point an agent at it, and watch the memory graph fill in.
+        </p>
+        <div class="steps">
+          <div class="step">
+            <span class="num">01</span>
+            <img src={stepRun} alt="" width="64" height="64" />
+            <h3>Run it</h3>
+            <p>Run the memory server locally with cargo, or bring up the Helm chart on a cluster. One Postgres, no extra services.</p>
+            <p><code>cargo run -p memkeys-server</code></p>
+            <a class="deep" href={quickstartDoc}>Quickstart →</a>
+          </div>
+          <div class="step">
+            <span class="num">02</span>
+            <img src={stepConnect} alt="" width="64" height="64" />
+            <h3>Connect an agent</h3>
+            <p>Add the MCP endpoint to your agent. Four operations: store, fetch, search, traverse.</p>
+            <p><code>MEMKEYS_ROLE=mcp memkeys-server</code></p>
+            <a class="deep" href={mcpDoc}>Connect an agent →</a>
+          </div>
+          <div class="step">
+            <span class="num">03</span>
+            <img src={stepBrowse} alt="" width="64" height="64" />
+            <h3>Browse memory</h3>
+            <p>Open the read-only Inspector UI on :3001 to search facts and traverse the graph — it never writes.</p>
+            <p><code>cd frontend &amp;&amp; npm run dev</code></p>
+            <a class="deep" href={inspectorAnchor}>Explore the Inspector →</a>
+          </div>
+        </div>
+        <div class="cta-row">
+          <a href={docs}>Read the docs</a>
+          <a class="btn btn-ink" href={mcpDoc}>Connect an agent</a>
+          <a class="btn btn-ink" href={`${repo}`}>Star on GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FINAL CTA (copy deck §7) -->
+    <section class="final">
+      <div class="wrap">
+        <h2>Memory your agents can actually find again.</h2>
+        <p>
+          MemKeys is open source and built in the open. Read the architecture, run it locally in a
+          minute, and bring your own backend.
+        </p>
+        <div class="cta-row" style="justify-content:center">
+          <a class="btn btn-primary" href="#quickstart">Get started →</a>
+          <a class="btn btn-ghost" href={repo}>Star on GitHub</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER (copy deck §8 + design mockup) -->
+    <footer class="mk-footer">
+      <div class="wrap">
+        <div class="foot">
+          <div style="max-width:300px">
+            <img class="lockup" src={lockupReverse} alt="MemKeys" width="69" height="26" />
+            <p style="margin:0">
+              Attribute-based memory server for AI agents — facts keyed by attribute, with
+              temporal validity. Graph + vector as derived views.
+            </p>
+          </div>
+          <div class="cols">
+            <div>
+              <h4>Product</h4>
+              <a href="#architecture">How it works</a>
+              <a href="#quickstart">Get started</a>
+              <a href={docs}>Docs</a>
+              <a href={inspectorAnchor}>Inspector UI</a>
+            </div>
+            <div>
+              <h4>Project</h4>
+              <a href={repo}>GitHub</a>
+              <a href={`${repo}/releases`}>Releases</a>
+              <a href="https://opensource.org/licenses/Apache-2.0">License (Apache-2.0)</a>
+              <a href={`${repo}/tree/main/branding`}>Brand assets</a>
+            </div>
+          </div>
+        </div>
+        <div class="legal">
+          © 2026 MemKeys · Open contract, pluggable backends ·
+          <span class="mono">Every fact has an address.</span> · MemKeys is open source
+          (<a href="https://opensource.org/licenses/Apache-2.0" style="display:inline">Apache-2.0</a>).
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>
