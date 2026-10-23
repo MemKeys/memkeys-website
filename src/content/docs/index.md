@@ -16,7 +16,7 @@ order. Markdown here is the **source of truth** for the published docs site.
 | 1 | [What is MemKeys?](./what-is-memkeys.md) | Pitch, the keyed-first invariant, facts & temporal validity, graph + vector as derived views, and the "not MemPalace" note. |
 | 2 | [Architecture](./architecture.md) | The fact envelope, keyed-first retrieval, the single-Postgres layout, the write pipeline, and the four-operation contract. |
 | 3 | [Getting started](./getting-started.md) | Docker Compose with `pgvector/pgvector:pg18`, env essentials, first `/memory/*` calls, and the Inspector UI. |
-| 4 | *Connecting agents* | How to point Claude Code / MCP agents at MemKeys. **Forthcoming — ISI-6401.** |
+| 4 | [Connect your agents](./connect-your-agents.md) | Point Claude Code, kagent, goose, or any raw JSON-RPC client at MemKeys over stdio MCP — per-run tokens, verified recipes, troubleshooting. |
 | 5 | [CRD reference](./crd-reference.md) | Every `MemKeysInstance` (`memkeys.io/v1alpha1`) spec field, status conditions, and operator-vs-Helm guidance. |
 
 ## Source material
