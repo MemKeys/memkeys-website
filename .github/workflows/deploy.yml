@@ -8,6 +8,12 @@ on:
   # Allow the code repo to trigger a republish when its docs/ change.
   repository_dispatch:
     types: [docs-updated]
+  # Drift poll: the code repo (MemKeys/memkeys) cannot dispatch by itself
+  # (its workflows have no cross-repo token), so re-check its docs/ tree on
+  # a schedule and republish only when it actually changed. Explicit
+  # triggers (push / dispatch / manual) always deploy.
+  schedule:
+    - cron: '*/30 * * * *'
 
 # Allow the workflow to publish to GitHub Pages.
 permissions:
@@ -24,6 +30,9 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-latest
+    outputs:
+      docs_sha: ${{ steps.drift.outputs.sha }}
+      changed: ${{ steps.drift.outputs.changed }}
     steps:
       - name: Checkout website
         uses: actions/checkout@v4
@@ -38,32 +47,80 @@ jobs:
           sparse-checkout-cone-mode: false
           path: .memkeys
 
+      # Docs drift check: hash the ingested docs/ tree and compare against
+      # the marker published with the live site. Scheduled runs skip the
+      # whole build when nothing changed; every other trigger always builds.
+      - name: Docs drift check
+        id: drift
+        env:
+          LIVE_MARKER_URL: https://memkeys.github.io/memkeys-website/docs-build.json
+        run: |
+          set -euo pipefail
+          DOCS_SHA="$(find .memkeys/docs -type f -not -path '*/.git/*' -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)"
+          echo "docs sha: ${DOCS_SHA}"
+          echo "sha=${DOCS_SHA}" >> "$GITHUB_OUTPUT"
+          if [ "${GITHUB_EVENT_NAME}" != "schedule" ]; then
+            echo "explicit trigger (${GITHUB_EVENT_NAME}) -> build"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LIVE="$(curl -fsSL --max-time 30 "$LIVE_MARKER_URL" 2>/dev/null | jq -r '.docsSha // empty' || true)"
+          echo "live marker: ${LIVE:-<none>}"
+          if [ -n "$LIVE" ] && [ "$LIVE" = "$DOCS_SHA" ]; then
+            echo "docs unchanged -> skip"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "docs changed -> rebuild"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.drift.outputs.changed == 'true'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install
+        if: steps.drift.outputs.changed == 'true'
         run: npm ci
 
       # Build-time Mermaid rendering (rev 3) drives a headless Chromium.
       - name: Install Chromium for Mermaid
+        if: steps.drift.outputs.changed == 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Build
+        if: steps.drift.outputs.changed == 'true'
         # astro build runs the sync-docs prebuild hook, which reads .memkeys/docs.
         run: npm run build
 
+      # Publish the drift marker alongside the site so the next scheduled
+      # run knows which docs tree is live.
+      - name: Record docs build marker
+        if: steps.drift.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          printf '{"docsSha":"%s","builtAt":"%s","trigger":"%s"}\n' \
+            "${{ steps.drift.outputs.sha }}" \
+            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            "${GITHUB_EVENT_NAME}" \
+            > dist/docs-build.json
+          cat dist/docs-build.json
+
       - name: Upload Pages artifact
+        if: steps.drift.outputs.changed == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: dist
 
   deploy:
     name: deploy
-    # Only publish from main / dispatch — PRs build (above) to gate, never deploy.
-    if: github.event_name != 'pull_request'
+    # Only publish from main / dispatch / drifted schedule runs — PRs build
+    # (above) to gate, never deploy; unchanged scheduled runs skip entirely.
+    if: >
+      github.event_name != 'pull_request' &&
+      needs.build.outputs.changed == 'true'
     needs: build
     runs-on: ubuntu-latest
     environment:
