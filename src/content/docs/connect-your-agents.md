@@ -180,7 +180,7 @@ stdout before the JSON-RPC stream (Claude tolerates them; the planned
 concurrent sessions each spawn their own in-pod server, which is why the
 launcher randomizes ports.
 
-## 4. Recipe: kagent — control-plane verified
+## 4. Recipe: kagent — verified
 
 kagent exposes MCP servers as the `MCPServer` CRD (`kagent.dev/v1alpha1`,
 `transportType: stdio`); kagent runs the server container itself and agents
@@ -242,6 +242,13 @@ Check acceptance: `kubectl -n kagent get mcpservers` →
 Tool negotiation happens when a session starts. Mind node pressure: MCP server
 pods get evicted like any other pod and kagent reschedules them.
 
+Session-level verification (2026-10-23): a raw JSON-RPC client piped through
+the **kagent-hosted `memkeys-mcp` pod** (same image, env, and Postgres the
+MCPServer spec above provides) completed `initialize` → `tools/list` →
+`memory_store` (fact id returned) → `memory_fetch` → `memory_traverse`
+(hydrated `entity_fact` edge) — the full handshake, not just control-plane
+acceptance.
+
 ## 5. Recipe: goose — documented
 
 goose (Block's open-source agent, now under the AAIF) supports stdio MCP
@@ -280,7 +287,7 @@ driver used for verification (run it in-pod, or point it at any launcher):
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 INIT='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"raw-client","version":"1"}}}'
 LIST='{"jsonrpc":"2.0","id":2,"method":"tools/list"}'
-STORE='{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"memory_store","arguments":{"envelope":{"source":{"kind":"gateway_flush","emitted_at":"'"$NOW"'"},"entity":{"project":"demo","agent":"raw-client"},"fact":{"body":"hello from the raw client","subject":"smoke"}}}}}'
+STORE='{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"memory_store","arguments":{"envelope":{"source":{"kind":"gateway_flush","emitted_at":"'"$NOW"'"},"entity":{"project":"demo","agent":"raw-client","run":"raw-client-1"},"fact":{"body":"hello from the raw client","subject":"smoke"}}}}}'
 FETCH='{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"memory_fetch","arguments":{"entity.project":"demo"}}}'
 TRAVERSE='{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"memory_traverse","arguments":{"start":{"kind":"entity_project","id":"demo|entity.project|demo"},"edges":["entity_fact"],"direction":"out","depth":2,"hydrate":true}}}'
 SEARCH='{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"memory_search","arguments":{"query":"hello from the raw client","k":5,"scope":{"entity.project":"demo"}}}}'
@@ -314,13 +321,13 @@ the child process — e.g. the official TypeScript
   its own all-in-one server; keep the randomized-alt-ports pattern until
   `MEMKEYS_ROLE=mcp` (bind-less MCP-only mode) ships.
 
-## Appendix: how each recipe was verified (2026-10-22, ISI-6401)
+## Appendix: how each recipe was verified (2026-10-22/23, ISI-6401)
 
 | Recipe | Result | Evidence |
 |---|---|---|
 | Raw JSON-RPC driver | **verified** — initialize, tools/list, store (`fact_id` returned), fetch, traverse (hydrated `entity_fact` edge), search (score 0.60) | in-pod run on the `k8squad-test` cluster, tenant `isi6401-verify`, live Postgres |
 | Claude Code 2.1.239 | **verified** — `claude mcp list` health check `✔ Connected` through the launcher | registered via `claude mcp add-json` on the agent host, same cluster |
-| kagent | **control-plane verified** — `MCPServer/memkeys-mcp` Accepted/ResolvedRefs/Programmed/Ready, `Agent/memkeys-demo` READY/ACCEPTED, pod 1/1 | applied live on the `memory-benchmark` cluster with the real memkeys image |
+| kagent | **verified** — control-plane: `MCPServer/memkeys-mcp` Ready, `Agent/memkeys-demo` READY/ACCEPTED, pod 1/1; session-level (2026-10-23): full stdio handshake through the kagent-hosted pod — initialize, tools/list, store (`fact_id f70e0f87…`), fetch, traverse (`entity_fact` edge) | applied live on the `memory-benchmark` cluster with the real memkeys image |
 | goose 1.55.0 | **documented** — config-registered but tools did not attach in a non-interactive session; provider (Ollama) reachable, model responded | attempt log in the ISI-6401 run; re-verify with `goose configure` |
 
 Raw transcripts are in the ISI-6401 run log; the driver and manifests are
