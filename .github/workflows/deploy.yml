@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: MemKeys/memkeys
-          ref: main
+          ref: isi-6494/website-docs-content
           sparse-checkout: docs
           sparse-checkout-cone-mode: false
           path: .memkeys
