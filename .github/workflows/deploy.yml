@@ -47,10 +47,6 @@ jobs:
       - name: Install
         run: npm ci
 
-      # Build-time Mermaid rendering (rev 3) drives a headless Chromium.
-      - name: Install Chromium for Mermaid
-        run: npx playwright install --with-deps chromium
-
       - name: Build
         # astro build runs the sync-docs prebuild hook, which reads .memkeys/docs.
         run: npm run build

@@ -1,68 +1,129 @@
 #!/usr/bin/env node
-// sync-docs.mjs — ingest the MemKeys/memkeys code repo's docs/ Markdown as this
-// website's docs source of truth, so docs stay versioned with the code.
+// sync-docs.mjs — publish the curated public docs from the repo-root docs/
+// tree into the website's content collection, and guard the publication
+// boundary at build time.
 //
-// The docs live in the *code* repo (MemKeys/memkeys), not here. CI performs a
-// sparse checkout of that repo's docs/ tree into .memkeys/ (see the Pages
-// workflow); for local dev, either clone it there or point MEMKEYS_DOCS_DIR /
-// MEMKEYS_REPO at an existing checkout.
-//
-// Why a sync step (and not a direct glob loader over the docs dir)?
-//   The engineering docs are authored as plain Markdown with no Starlight
-//   frontmatter (no `title:`), so a raw docsLoader() glob would fail schema
-//   validation. We copy each file into src/content/docs/ and inject the minimal
-//   frontmatter Starlight needs, deriving the title from the first H1. Files
-//   that already carry frontmatter (e.g. docs/guide/ from M1 · ISI-6397) are
-//   passed through verbatim. The source of truth stays the code repo's docs/.
+// Publication boundary (overhaul plan §5):
+//   - PUBLIC_DOCS is the allowlist: the ONLY repo docs published to the site.
+//     Everything else in docs/ (internal process, CI, observability, design,
+//     ADRs, work products, the copy deck, ...) is never synced. No repo file
+//     is moved or deleted — repo hygiene stays with the P1 cleanup ticket.
+//   - KEEP protects the hand-authored site pages (landing, why, quickstart)
+//     so the sync never overwrites or deletes them.
+//   - Synced pages are nested under docs/ in the content collection so they
+//     publish at /docs/<slug>/ per the approved IA. Absolute links to the
+//     pre-IA flat routes are rewritten to /docs/ in the generated copy.
+//   - The build-time guard (assertClean below) scans the whole content set
+//     that will be published and FAILS the build if any page carries an
+//     internal ticket ref (ISI-<digits>) or the internal tooling name
+//     ("paperclip", case-insensitive). scripts/check-refs.mjs adds a second
+//     net over the emitted dist/ HTML as the postbuild step.
 //
 // Output under src/content/docs/ is git-ignored and regenerated on every
-// `npm run dev` / `npm run build` (see predev/prebuild hooks in package.json).
+// `npm run dev` / `npm run build` (predev/prebuild hooks in package.json).
+//
+// Usage:
+//   node scripts/sync-docs.mjs           sync the allowlist + run the guard
+//   node scripts/sync-docs.mjs --check   run the guard only (scan the
+//                                        current content set, no sync)
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// The docs live in the *code* repo (MemKeys/memkeys), not here. CI performs a
+// sparse checkout of that repo's docs/ tree into .memkeys/ (see the Pages
+// workflow); for local dev, either clone it there or point MEMKEYS_DOCS_DIR /
+// MEMKEYS_REPO at an existing checkout.
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-
-// Resolve the source docs/ directory, in priority order.
 const SRC_DOCS = process.env.MEMKEYS_DOCS_DIR
   ? path.resolve(process.env.MEMKEYS_DOCS_DIR)
   : process.env.MEMKEYS_REPO
     ? path.join(path.resolve(process.env.MEMKEYS_REPO), 'docs')
     : path.join(PROJECT_ROOT, '.memkeys', 'docs');
-
-// Ingested engineering docs land in a dedicated `reference/` subtree so they
-// never collide with hand-authored site pages (e.g. index.mdx,
-// what-is-memkeys.md, getting-started.md) that live directly under
-// src/content/docs/. Only this subtree is generated / git-ignored / cleaned.
-const OUT_DOCS = path.join(PROJECT_ROOT, 'src', 'content', 'docs', 'reference');
+const OUT_DOCS = path.join(PROJECT_ROOT, 'src', 'content', 'docs');
+// Synced pages are nested under docs/ so they publish at /docs/<slug>/.
+const SECTION = 'docs';
 const EDIT_BASE = 'https://github.com/MemKeys/memkeys/edit/main/docs';
 
+// The public documentation set — the ONLY repo docs published to the site.
+// Slugs match the curated sidebar in astro.config.mjs (plan §3.4).
+const PUBLIC_DOCS = [
+  'what-is-memkeys.md',
+  'architecture.md',
+  'connect-your-agents.md',
+  'agent-mcp-transport.md',
+  'k8s-operator.md',
+  'retrieval-contract.md',
+  'configuration.md',
+];
+
+// Hand-authored site pages that live in the site itself (not synced from
+// docs/). The sync never writes or deletes these.
+const KEEP = new Set(['index.mdx', 'why.mdx', 'quickstart.mdx']);
+
+// Internal references that must never reach the published site.
+const FORBIDDEN = [
+  { re: /isi-\d+/i, label: 'internal ticket id' },
+  { re: /paperclip/i, label: 'internal tooling name' },
+];
+
+// Absolute links to the pre-IA flat doc routes are rewritten to the /docs/
+// IA in the generated copy (anchors preserved). Source docs author absolute
+// links with the /memkeys base from the code repo's website tree — every
+// absolute site link is normalized to this repo's actual deploy base.
+const BASE = process.env.BASE ?? '/memkeys-website';
+const SLUGS = PUBLIC_DOCS.map((name) => path.basename(name, '.md'));
+const FLAT_LINK_RE = new RegExp(
+  `(\\]\\()(?:/memkeys(?:-website)?/)(${SLUGS.join('|')})(/|#|\\))`,
+  'g',
+);
+// Any remaining absolute site link carrying the old base — md links or href
+// attributes — is rebased onto the deploy base (lookahead keeps partial
+// matches like external github.com/MemKeys/memkeys URLs untouched).
+const BASE_LINK_RE = /(\]\(|href=")(\/memkeys(?:-website)?)(?=[/"#])/g;
+
+/**
+ * Recursively collect every Markdown page under `dir`.
+ * @param {string} dir
+ * @returns {Promise<string[]>}
+ */
 async function walk(dir) {
+  /** @type {string[]} */
   const out = [];
-  for (const entry of await fs.readdir(dir, { withFileTypes: true })) {
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return out;
+  }
+  for (const entry of entries) {
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) out.push(...(await walk(full)));
-    else if (entry.isFile() && entry.name.endsWith('.md')) out.push(full);
+    else if (entry.isFile()) out.push(full);
   }
   return out;
 }
 
-// Wipe the generated reference/ subtree so deletions in docs/ propagate and
-// stale pages never linger. Only this subtree is ours — hand-authored pages
-// elsewhere under src/content/docs/ are never touched.
-async function clean(dir) {
-  await fs.rm(dir, { recursive: true, force: true });
-}
-
+/**
+ * @param {string} body
+ * @param {string} relPath
+ * @returns {string}
+ */
 function deriveTitle(body, relPath) {
   const match = body.match(/^#\s+(.+?)\s*$/m);
   if (match) return match[1].trim();
+  // Fallback: humanize the file name.
   const base = path.basename(relPath, '.md');
   return base.replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/**
+ * @param {string} body
+ * @param {string} title
+ * @returns {string}
+ */
 function stripFirstH1(body, title) {
   // Drop the first H1 — Starlight renders the frontmatter title as the page H1,
   // so keeping the Markdown H1 would duplicate it.
@@ -70,68 +131,176 @@ function stripFirstH1(body, title) {
   const idx = lines.findIndex((l) => /^#\s+/.test(l));
   if (idx !== -1 && lines[idx].replace(/^#\s+/, '').trim() === title) {
     lines.splice(idx, 1);
+    // Also drop an immediately-following blank line for tidiness.
     if (lines[idx] === '') lines.splice(idx, 1);
   }
   return lines.join('\n');
 }
 
+/**
+ * @param {string} s
+ * @returns {string}
+ */
 function yamlQuote(s) {
   return `"${s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
 }
 
-async function main() {
-  try {
-    await fs.access(SRC_DOCS);
-  } catch {
+// Rewrite absolute links to the pre-IA flat doc routes so the published
+// pages point at the curated /docs/ locations, then rebase every absolute
+// site link onto the deploy base.
+function rewriteFlatLinks(out) {
+  return out.replace(
+    FLAT_LINK_RE,
+    (_match, opener, slug, tail) => `${opener}${BASE}/${SECTION}/${slug}${tail}`,
+  );
+}
+
+function rewriteBase(out) {
+  return out.replace(BASE_LINK_RE, (_match, opener, _oldBase) => `${opener}${BASE}`);
+}
+
+async function transformDoc(name) {
+  const raw = await fs.readFile(path.join(SRC_DOCS, name), 'utf8');
+  let out;
+  if (raw.startsWith('---\n') || raw.startsWith('---\r\n')) {
+    // Already authored with Starlight frontmatter — pass it through verbatim
+    // so we never double-inject a frontmatter block.
+    out = raw;
+  } else {
+    // Plain engineering Markdown — inject the minimal frontmatter Starlight
+    // needs, deriving the title from the first H1. The edit link points at
+    // the real source under repo-root docs/, not the generated copy.
+    const title = deriveTitle(raw, name);
+    const body = stripFirstH1(raw, title);
+    out = [
+      '---',
+      `title: ${yamlQuote(title)}`,
+      `editUrl: ${EDIT_BASE}/${name}`,
+      '---',
+      '',
+    ].join('\n') + body;
+  }
+  return rewriteBase(rewriteFlatLinks(out));
+}
+
+// Build-time guard: scan the whole content set that will be published
+// (synced docs + hand-authored KEEP pages) and fail the build on any
+// internal reference.
+async function assertClean() {
+  const files = (await walk(OUT_DOCS)).filter((f) =>
+    /\.(md|mdx)$/.test(f),
+  );
+  if (files.length === 0) {
     console.error(
-      `sync-docs: docs source not found at ${SRC_DOCS}\n` +
-        `  Provide it via a sparse checkout into .memkeys/ (see README / CI),\n` +
-        `  or set MEMKEYS_DOCS_DIR / MEMKEYS_REPO to an existing checkout.`,
+      'sync-docs guard: no content found in src/content/docs/ — did the sync run?',
     );
     process.exit(1);
   }
-
-  await fs.mkdir(OUT_DOCS, { recursive: true });
-  await clean(OUT_DOCS);
-
-  const files = await walk(SRC_DOCS);
-  let count = 0;
+  const violations = [];
   for (const file of files) {
-    const rel = path.relative(SRC_DOCS, file); // e.g. adr/ADR-0001-....md
-    const raw = await fs.readFile(file, 'utf8');
-    const dest = path.join(OUT_DOCS, rel);
-    await fs.mkdir(path.dirname(dest), { recursive: true });
-
-    let out;
-    if (raw.startsWith('---\n') || raw.startsWith('---\r\n')) {
-      // Already authored with Starlight frontmatter (e.g. docs/guide/ from the
-      // content milestone M1 · ISI-6397) — pass it through verbatim so we never
-      // double-inject a frontmatter block.
-      out = raw;
-    } else {
-      // Plain engineering Markdown — inject the minimal frontmatter Starlight
-      // needs, deriving the title from the first H1. The slug nests the page
-      // under /docs/ so the landing page (src/pages/index.astro, M5 · ISI-6479)
-      // owns the site root.
-      const title = deriveTitle(raw, rel);
-      const body = stripFirstH1(raw, title);
-      const slug = `docs/reference/${rel.replace(/\.md$/, '').replace(/\\/g, '/')}`;
-      out =
-        [
-          '---',
-          `title: ${yamlQuote(title)}`,
-          `slug: ${slug}`,
-          `editUrl: ${EDIT_BASE}/${rel}`,
-          '---',
-          '',
-        ].join('\n') + body;
+    const rel = path.relative(OUT_DOCS, file);
+    const body = await fs.readFile(file, 'utf8');
+    for (const { re, label } of FORBIDDEN) {
+      const m = body.match(re);
+      if (m) {
+        const at = Math.max(0, body.indexOf(m[0]) - 40);
+        violations.push(
+          `  ${rel}: ${label} "${m[0]}" … ${body.slice(at, at + 100).replace(/\s+/g, ' ')}`,
+        );
+      }
     }
+  }
+  if (violations.length > 0) {
+    console.error(
+      `sync-docs guard: FAILED — ${violations.length} internal reference(s) in the content set that will be published:\n` +
+        violations.join('\n') +
+        '\nRemove the internal reference from the source doc (docs/) or the hand-authored page; internal refs must never be emitted.',
+    );
+    process.exit(1);
+  }
+  console.log(
+    `sync-docs guard: clean — ${files.length} page(s) scanned, zero internal references.`,
+  );
+}
 
-    await fs.writeFile(dest, out, 'utf8');
-    count += 1;
+// Remove directories left empty by the stale-file sweep (never OUT_DOCS).
+async function pruneEmptyDirs(dir) {
+  let entries;
+  try {
+    entries = await fs.readdir(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const full = path.join(dir, entry.name);
+    await pruneEmptyDirs(full);
+    if ((await fs.readdir(full)).length === 0) await fs.rmdir(full);
+  }
+}
+
+async function main() {
+  if (process.argv.includes('--check')) {
+    await assertClean();
+    return;
   }
 
-  console.log(`sync-docs: ingested ${count} Markdown file(s) from ${SRC_DOCS} -> src/content/docs/reference/`);
+  await fs.mkdir(path.join(OUT_DOCS, SECTION), { recursive: true });
+
+  // Transform the allowlisted docs. A missing allowlisted doc is a hard
+  // error: the curated sidebar references it, so the published set would be
+  // incomplete.
+  const targets = new Map(); // posix rel path from OUT_DOCS -> content
+  for (const name of PUBLIC_DOCS) {
+    let out;
+    try {
+      out = await transformDoc(name);
+    } catch {
+      console.error(
+        `sync-docs: allowlisted doc not found: docs/${name} — the curated sidebar references it; the public set is incomplete.`,
+      );
+      process.exit(1);
+    }
+    targets.set(`${SECTION}/${name}`, out);
+  }
+
+  // Sweep stale generated output: everything that is neither a KEEP page nor
+  // a current sync target (covers deleted docs and the pre-IA flat layout).
+  const keep = new Set([...KEEP, ...targets.keys()]);
+  for (const file of await walk(OUT_DOCS)) {
+    const rel = path.relative(OUT_DOCS, file).split(path.sep).join('/');
+    if (!keep.has(rel)) await fs.rm(file);
+  }
+  await pruneEmptyDirs(OUT_DOCS);
+
+  // Write targets, skipping unchanged files so dev rebuilds stay quiet.
+  let written = 0;
+  for (const [rel, out] of targets) {
+    const dest = path.join(OUT_DOCS, rel);
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    let prev;
+    try {
+      prev = await fs.readFile(dest, 'utf8');
+    } catch {
+      // New file.
+    }
+    if (prev !== out) {
+      await fs.writeFile(dest, out, 'utf8');
+      written += 1;
+    }
+  }
+
+  // Internal docs excluded by the allowlist (for the log line).
+  const excluded = (await walk(SRC_DOCS)).filter(
+    (f) => f.endsWith('.md') && !PUBLIC_DOCS.includes(path.basename(f)),
+  ).length;
+
+  console.log(
+    `sync-docs: published ${targets.size} public doc(s) -> src/content/docs/${SECTION}/ ` +
+      `(${written} written, ${excluded} internal doc(s) excluded by the allowlist)`,
+  );
+
+  await assertClean();
 }
 
 main().catch((err) => {
