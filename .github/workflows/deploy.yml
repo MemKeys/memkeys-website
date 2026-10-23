@@ -8,6 +8,12 @@ on:
   # Allow the code repo to trigger a republish when its docs/ change.
   repository_dispatch:
     types: [docs-updated]
+  # Pull-based fallback: rebuild from the code repo's docs/ (sparse checkout
+  # of MemKeys/memkeys@main) on a fixed schedule, so the published site stays
+  # current even without the cross-repo dispatch token. Builds are idempotent
+  # when docs/ has not changed. The deploy job only publishes non-PR runs.
+  schedule:
+    - cron: '23 */6 * * *'
 
 # Allow the workflow to publish to GitHub Pages.
 permissions:
