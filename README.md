@@ -1,96 +1,57 @@
-# memkeys-website
+# MemKeys website
 
 The MemKeys documentation + landing site, built with [Astro](https://astro.build)
 and [Starlight](https://starlight.astro.build). One property hosts both the docs
-experience and the marketing landing page (ISI-6398 · plan §4 + §0 rev 2).
+experience and the marketing landing page.
 
-Published to **GitHub Pages** at <https://memkeys.github.io/memkeys-website/> and
-republished on every merge to `main` (`.github/workflows/deploy.yml`). The domain
-is deferred to `*.github.io` until `memkeys.dev` / `.io` is registered
-(ISI-5919); override the `SITE` / `BASE` env vars when a custom domain lands.
+Published to **GitHub Pages** at <https://memkeys.github.io/memkeys-website/>
+and republished on every merge to `main` (`.github/workflows/deploy.yml`). The
+domain is deferred to `*.github.io` until `memkeys.dev` / `.io` is registered;
+override `SITE` / `BASE` env vars when a custom domain lands.
 
-## Content model
+## Docs are sourced from the code repo
 
-Starlight renders everything under `src/content/docs/`. There are two sources,
-and they coexist without collision:
+The engineering docs under the [`MemKeys/memkeys`](https://github.com/MemKeys/memkeys)
+repo's `docs/` tree are the single source of truth. CI sparse-checkouts that
+tree into `.memkeys/` before building; locally, either do the same or point
+`MEMKEYS_DOCS_DIR` / `MEMKEYS_REPO` at an existing checkout.
+`scripts/sync-docs.mjs` ingests them into `src/content/docs/docs/` (git-ignored)
+at dev/build time, injecting the minimal Starlight frontmatter (`title` derived
+from the first `# H1`, plus an `editUrl` back to the real source file) and
+rebasing absolute links from the code repo's Pages base (`/memkeys`) to this
+site's base. **Edit the docs in the code repo, not the generated copies.**
 
-1. **Hand-authored site pages** — committed directly under `src/content/docs/`
-   (the end-user pages `what-is-memkeys.md`, `getting-started.md`,
-   `crd-reference.md`, …). These are authored here with
-   Starlight frontmatter (`title` / `description` / `sidebar.order`). Every
-   page carries a `slug: docs/…` override so the docs app is served under
-   `/docs/*` (the landing page owns the site root — see below).
-   The **landing page is not a docs page**: it lives at
-   [`src/pages/index.astro`](src/pages/index.astro) (a standalone Astro page
-   that outranks Starlight's catch-all route at `/`).
-2. **Ingested engineering docs** — the code repo
-   ([`MemKeys/memkeys`](https://github.com/MemKeys/memkeys)) `docs/` tree is the
-   source of truth for deeper engineering/reference docs. They are **ingested at
-   build time** into `src/content/docs/reference/` (git-ignored) so docs stay
-   versioned with the code — never hand-edit `reference/`.
+### Publication boundary
 
-> **rev 2 note:** per ISI-6393 rev 2 the site lives in this dedicated repo while
-> the code repo's `docs/` remains authored there and ingested at build time. The
-> `reference/` subtree keeps that ingestion fully separate from the hand-authored
-> pages, so neither clobbers the other. Which code-repo docs are surfaced (and
-> the final sidebar/IA) is curated by the content (M1 · ISI-6397) and assemble
-> (M5 · ISI-6402) milestones.
+Only the `PUBLIC_DOCS` allowlist in `scripts/sync-docs.mjs` is published —
+everything else in the code repo's `docs/` (ADRs, CI notes, observability
+planning, design notes, work products) stays internal. The hand-authored pages
+(`index.mdx`, `why.mdx`, `quickstart.mdx`) are protected by the `KEEP` set. Two
+build-time guards enforce the boundary:
 
-### How ingestion works
+- `scripts/sync-docs.mjs` fails the build if any page in the content set
+  carries an internal ticket ref (`ISI-<digits>`) or the internal tooling name
+  ("paperclip").
+- `scripts/check-refs.mjs` (postbuild) re-scans the emitted `dist/` HTML for
+  the same patterns as a second net.
 
-- **CI** sparse-checks-out `MemKeys/memkeys`'s `docs/` tree into `.memkeys/`.
-- `scripts/sync-docs.mjs` copies that Markdown into `src/content/docs/reference/`,
-  injecting the minimal Starlight frontmatter (`title` from the first `# H1`,
-  plus an `editUrl` back to the real source file). Files already carrying
-  frontmatter (e.g. `docs/guide/` from M1) pass through untouched.
-
-### Local development
+## Develop
 
 ```bash
-# Provide a docs checkout for ingestion — either:
-git clone --filter=blob:none --no-checkout https://github.com/MemKeys/memkeys .memkeys
-git -C .memkeys sparse-checkout set docs && git -C .memkeys checkout main
-# …or point at an existing clone:  export MEMKEYS_REPO=/path/to/memkeys
-
 npm install
-npx playwright install chromium   # for build-time Mermaid rendering
-npm run dev                       # runs sync-docs then astro dev on :4321
+MEMKEYS_REPO=/path/to/memkeys npm run dev   # sync-docs then astro dev on :4321
 ```
 
-| Command           | Action                                                   |
-| ----------------- | -------------------------------------------------------- |
-| `npm run sync`    | Ingest the code repo's `docs/` → `src/content/docs/reference/` |
-| `npm run dev`     | Sync, then start the dev server                          |
-| `npm run build`   | Sync, then build the static site to `dist/`              |
+| Command         | Action                                                     |
+| --------------- | ---------------------------------------------------------- |
+| `npm run sync`  | Ingest the code repo's `docs/` → `src/content/docs/docs/`  |
+| `npm run dev`   | Sync, then start the dev server                            |
+| `npm run build` | Sync, then build the static site to `dist/`                |
 | `npm run preview` | Preview the built `dist/` locally                        |
-| `npm run check`   | Sync, then run `astro check` (type + content validation) |
-
-## Diagrams (Mermaid + SVG)
-
-Per the board standard (rev 3), diagrams are **Mermaid or saved SVG, never
-ASCII**. Fenced ` ```mermaid ` blocks render to **inline SVG at build time** via
-[`rehype-mermaid`](https://github.com/remcohaszing/rehype-mermaid) (Shiki is
-configured to skip the `mermaid` language so the raw graph source reaches the
-renderer). The renderer drives a headless Chromium, so CI runs
-`npx playwright install --with-deps chromium`. Inline SVG embeds the diagram
-directly in the HTML, so it serves correctly under the Pages base path. Saved
-`.svg` assets in `public/` serve through the same base path.
-
-## Design handoff
-
-The landing visual/UX design (M4a · ISI-6399) is staged in
-[`design/`](design/) — `mockup.html` is the layout source of truth, with the
-hero/architecture/how-to SVGs in `design/assets/`. The landing (M5 · ISI-6479)
-assembles that design and the copy deck (M4b · ISI-6400,
-[`content/landing-copy.md`](content/landing-copy.md)) into
-[`src/pages/index.astro`](src/pages/index.astro); the subset of design SVGs it
-serves is copied to [`src/assets/landing/`](src/assets/landing/) and bundled
-(hashed) by Astro, and fonts are self-hosted via `@fontsource/ibm-plex-*`.
-`design/` itself remains the handoff record, not a served path.
+| `npm run check` | Sync, then run `astro check` (type + content validation)   |
 
 ## Brand
 
-Theme and assets come from the locked brand kit in the code repo
-(`branding/_unpacked/memkeys-branding/`): palette in `src/styles/brand.css`,
-logo lockups + hero mark in `src/assets/`, favicon + OG/social card in
-`public/`. No new identity work.
+Theme and assets come from the locked brand kit (see `design/` in this repo):
+palette in `src/styles/brand.css`, logo lockups + hero mark in `src/assets/`,
+favicon + OG/social card in `public/`.
