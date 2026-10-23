@@ -193,6 +193,11 @@ export default defineConfig({
     '/k8s-operator': withBase('/docs/k8s-operator/'),
     '/retrieval-contract': withBase('/docs/retrieval-contract/'),
     '/configuration': withBase('/docs/configuration/'),
+    // Pre-overhaul pages served by the previous site: Quickstart replaces
+    // getting-started; the CRD reference is covered by the k8s-operator
+    // spec reference.
+    '/getting-started': withBase('/quickstart/'),
+    '/crd-reference': withBase('/docs/k8s-operator/'),
   },
   vite: {
     build: {
