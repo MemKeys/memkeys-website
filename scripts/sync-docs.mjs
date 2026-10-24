@@ -59,12 +59,19 @@ const EDIT_BASE = 'https://github.com/MemKeys/memkeys/edit/main/docs';
 const PUBLIC_DOCS = [
   'what-is-memkeys.md',
   'architecture.md',
+  'instance-requirements.md',
   'connect-your-agents.md',
   'agent-mcp-transport.md',
   'k8s-operator.md',
   'retrieval-contract.md',
   'configuration.md',
+  'inspector-ui.md',
 ];
+
+// Binary assets referenced relatively (./assets/…) by the synced pages.
+// Copied under the docs section so relative links resolve on the site;
+// swept alongside the pages by the stale-file sweep below.
+const PUBLIC_ASSETS_DIR = 'assets';
 
 // Hand-authored site pages that live in the site itself (not synced from
 // docs/). The sync never writes or deletes these.
@@ -270,14 +277,34 @@ async function main() {
     targets.set(`${SECTION}/${name}`, out);
   }
 
-  // Sweep stale generated output: everything that is neither a KEEP page nor
-  // a current sync target (covers deleted docs and the pre-IA flat layout).
-  const keep = new Set([...KEEP, ...targets.keys()]);
+  // Sweep stale generated output: everything that is neither a KEEP page, a
+  // current sync target, nor a current asset (covers deleted docs, retired
+  // assets, and the pre-IA flat layout).
+  const assetFiles = await walk(path.join(SRC_DOCS, PUBLIC_ASSETS_DIR)).catch(
+    () => [],
+  );
+  const assetTargets = assetFiles.map(
+    (f) =>
+      `${SECTION}/${PUBLIC_ASSETS_DIR}/${path.relative(
+        path.join(SRC_DOCS, PUBLIC_ASSETS_DIR),
+        f,
+      )}`,
+  );
+  const keep = new Set([...KEEP, ...targets.keys(), ...assetTargets]);
   for (const file of await walk(OUT_DOCS)) {
     const rel = path.relative(OUT_DOCS, file).split(path.sep).join('/');
     if (!keep.has(rel)) await fs.rm(file);
   }
   await pruneEmptyDirs(OUT_DOCS);
+
+  // Copy assets (binary; unchanged-skip via size compare would be noise —
+  // the set is a handful of PNGs).
+  for (const src of assetFiles) {
+    const rel = path.relative(path.join(SRC_DOCS, PUBLIC_ASSETS_DIR), src);
+    const dest = path.join(OUT_DOCS, SECTION, PUBLIC_ASSETS_DIR, rel);
+    await fs.mkdir(path.dirname(dest), { recursive: true });
+    await fs.copyFile(src, dest);
+  }
 
   // Write targets, skipping unchanged files so dev rebuilds stay quiet.
   let written = 0;
