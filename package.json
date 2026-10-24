@@ -10,7 +10,7 @@
     "dev": "astro dev",
     "prebuild": "npm run sync",
     "build": "astro build",
-    "postbuild": "node scripts/check-refs.mjs",
+    "postbuild": "node scripts/check-refs.mjs && node scripts/check-mermaid.mjs",
     "preview": "astro preview",
     "check": "npm run sync && astro check"
   },

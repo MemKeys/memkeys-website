@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import rehypeMermaid from 'rehype-mermaid';
 
 // GitHub Pages project-page deployment for MemKeys/memkeys-website:
 //   https://memkeys.github.io/memkeys-website/
@@ -31,6 +32,7 @@ const sidebar = [
     items: [
       { label: 'What is MemKeys', slug: 'docs/what-is-memkeys' },
       { label: 'Architecture', slug: 'docs/architecture' },
+      { label: 'Instance requirements', slug: 'docs/instance-requirements' },
     ],
   },
   {
@@ -39,6 +41,7 @@ const sidebar = [
       { label: 'Connect your agents', slug: 'docs/connect-your-agents' },
       { label: 'MCP transport', slug: 'docs/agent-mcp-transport' },
       { label: 'Kubernetes', slug: 'docs/k8s-operator' },
+      { label: 'Inspector UI', slug: 'docs/inspector-ui' },
     ],
   },
   {
@@ -181,6 +184,14 @@ export default defineConfig({
   site,
   base,
   trailingSlash: 'ignore',
+  // Build-time Mermaid rendering: rehype-mermaid replaces fenced
+  // ```mermaid code blocks with inline SVGs during the markdown pipeline
+  // (before expressive-code sees them), using the Playwright Chromium that
+  // deploy.yml installs. Without this wiring the blocks fall through to
+  // expressive-code as plain syntax-highlighted text.
+  markdown: {
+    rehypePlugins: [[rehypeMermaid, { strategy: 'inline-svg' }]],
+  },
   // The docs section root lands on the first curated page; the pre-IA flat
   // doc routes (still linked from hand-authored pages, and previously
   // published URLs) redirect to the curated /docs/ locations.
