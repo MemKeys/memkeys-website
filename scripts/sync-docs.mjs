@@ -74,8 +74,11 @@ const PUBLIC_DOCS = [
 const PUBLIC_ASSETS_DIR = 'assets';
 
 // Hand-authored site pages that live in the site itself (not synced from
-// docs/). The sync never writes or deletes these.
-const KEEP = new Set(['index.mdx', 'why.mdx', 'quickstart.mdx']);
+// docs/). The sync never writes or deletes these. `docs/fact-flow.mdx` is the
+// hand-authored figure wrapper: it lives under docs/ so it publishes in the IA,
+// embeds the fact-flow poster (which lives in this repo, not the code repo),
+// and must never be overwritten or swept by the docs sync.
+const KEEP = new Set(['index.mdx', 'why.mdx', 'quickstart.mdx', 'docs/fact-flow.mdx']);
 
 // Internal references that must never reach the published site.
 const FORBIDDEN = [

@@ -1,0 +1,114 @@
+---
+// StepGrid — the "How to use" three-step grid, wiring the dormant step icons
+// (design package) into the landing page. Responsive without JS or media
+// queries via auto-fit minmax, so it collapses to one column on narrow
+// screens. Icons are decorative (alt=""); the heading + link carry meaning.
+import runIcon from '../assets/landing/how-step-1-run.svg?url';
+import connectIcon from '../assets/landing/how-step-2-connect.svg?url';
+import browseIcon from '../assets/landing/how-step-3-browse.svg?url';
+
+// Base-prefixed deep links, matching the explicit-base convention used by the
+// landing page's hero actions and link cards.
+const base = (import.meta.env.BASE_URL || '/').replace(/\/$/, '');
+const steps = [
+  {
+    n: '01',
+    icon: runIcon,
+    title: 'Run it',
+    body: 'Start the server as a container, a cargo binary, or a Helm chart — Postgres + pgvector and you are live.',
+    href: `${base}/quickstart/`,
+    cta: 'Quickstart',
+  },
+  {
+    n: '02',
+    icon: connectIcon,
+    title: 'Connect an agent',
+    body: 'Point Claude Code, goose, kagent — or any client — at MemKeys over MCP or HTTP with a config block.',
+    href: `${base}/docs/connect-your-agents/`,
+    cta: 'Connect your agents',
+  },
+  {
+    n: '03',
+    icon: browseIcon,
+    title: 'Browse memory',
+    body: 'Explore stored facts, keys, and the derived graph in the Inspector — see what your agents remember.',
+    href: `${base}/quickstart/`,
+    cta: 'Open the Inspector',
+  },
+];
+---
+
+<div class="stepgrid">
+  {
+    steps.map((s) => (
+      <div class="step">
+        <img src={s.icon} alt="" width="48" height="48" class="step-icon" />
+        <h3 class="step-title">
+          <span class="step-n">{s.n}</span> {s.title}
+        </h3>
+        <p class="step-body">{s.body}</p>
+        <a class="step-link" href={s.href}>
+          {s.cta} →
+        </a>
+      </div>
+    ))
+  }
+</div>
+
+<style>
+  .stepgrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .step {
+    border: 1px solid color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
+    border-radius: 16px;
+    padding: 1.3rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 120ms ease, transform 120ms ease;
+  }
+  .step:hover {
+    border-color: var(--sl-color-accent);
+    transform: translateY(-2px);
+  }
+  .step-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 0.5rem;
+  }
+  .step-title {
+    margin: 0.2rem 0 0.4rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+  .step-n {
+    font-family: var(--sl-font-mono, monospace);
+    color: var(--mk-blue, #3e6fd9);
+    margin-right: 0.15rem;
+  }
+  .step-body {
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+    color: var(--sl-color-gray-2, #a8b3c7);
+    flex: 1;
+  }
+  .step-link {
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .step-link:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .step {
+      transition: none;
+    }
+    .step:hover {
+      transform: none;
+    }
+  }
+</style>

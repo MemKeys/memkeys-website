@@ -11,6 +11,11 @@ src/content/docs/**/*
 !src/content/docs/index.mdx
 !src/content/docs/why.mdx
 !src/content/docs/quickstart.mdx
+# hand-authored figure wrapper (protected by sync-docs KEEP). Un-ignore the
+# docs/ subdir so git can descend, then track only this one file; the synced
+# siblings stay ignored (matched by the recursive pattern above).
+!src/content/docs/docs/
+!src/content/docs/docs/fact-flow.mdx
 
 # misc
 .DS_Store

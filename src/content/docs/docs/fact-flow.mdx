@@ -1,0 +1,48 @@
+---
+title: The MemKeys fact-flow
+description: How a fact travels through MemKeys — emitted by an agent, keyed and appended to the single keyed core, derived into graph and vector views, and retrieved by key, scoped search, or graph traversal.
+editUrl: false
+---
+
+import FactFlow from '../../../components/FactFlow.astro';
+
+This is the one-picture version of the [architecture](./architecture/): where a
+fact comes from, where it lives, and how it comes back. It is the same figure
+that anchors the landing page, and it renders in both the light and dark docs
+themes.
+
+<FactFlow caption="The lifecycle of a fact: emit → key & append → derive → retrieve, over the store / fetch / search / traverse contract." />
+
+## The four waypoints
+
+1. **Emit.** An agent produces a *raw* fact and sends it with the one anchor key
+   it already knows — a run id, a thread id. It never computes keys, validity
+   windows, or embeddings itself.
+
+2. **Key & append.** The server enriches the keys, applies temporal validity,
+   and appends the fact to the **single keyed core**. Nothing is overwritten: a
+   new version carries a `supersedes` link to the one it replaces, so the
+   superseded value stays queryable (the dimmed card in the figure).
+
+3. **Derive.** Graph and vector views are projected from the keyed core —
+   **asynchronously and rebuildably**. They are never a second source of truth;
+   losing one costs a replay, not data.
+
+4. **Retrieve.** Agents read back three ways, all returning the authoritative
+   record from the keyed core:
+   - **Fetch** by the keys you know (exact, deterministic).
+   - **Search** semantically *within a scope* — the keys bound the candidate set
+     before similarity runs (the `scope: project:…` halo in the figure).
+   - **Traverse** the graph to discover how entities connect.
+
+## The four-op contract
+
+| Operation | What it does | Waypoint |
+|---|---|---|
+| **Store** | write a fact, keyed | emit → key & append |
+| **Fetch** | retrieve by the keys you know | retrieve |
+| **Search** | semantic recall, within a scope | retrieve |
+| **Traverse** | hop the graph from a start node | retrieve |
+
+Store once, keyed. Graph and vector are views on the same facts — not three
+copies to keep in sync.
