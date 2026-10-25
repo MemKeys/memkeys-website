@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" class="mkff" viewBox="0 0 420 940" width="420" height="940" fill="none" role="img" aria-label="MemKeys fact-flow, compact: (1) an agent emits a raw fact; (2) the server keys and appends it to the keyed core, keeping superseded versions; (3) graph and vector views are derived from it; (4) agents retrieve by key, by scoped search, or by graph traversal — the store, fetch, search and traverse contract.">
+  <title>MemKeys fact-flow (compact) — emit, key &amp; append, derive, retrieve</title>
+  <defs>
+    <linearGradient id="cring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#17356F"/>
+      <stop offset="1" stop-color="#3E6FD9"/>
+    </linearGradient>
+  </defs>
+  <style>
+    /* Scoped to .mkff so inlining never leaks these rules; same brand tokens and
+       fallbacks as the full poster. */
+    .mkff{
+      --_ink:var(--mk-ink,#17356F);
+      --_blue:var(--mk-blue,#3E6FD9);
+      --_accent:var(--mk-accent,#F7C948);
+      --_ground:var(--mk-ground,#0B1830);
+      --_reverse:var(--mk-reverse,#EAF1FF);
+      --_paper:var(--mk-fig-ground,var(--mk-paper,#F7F4EC));
+      --_surface:var(--mk-fig-surface,#ffffff);
+      --_muted:#4A618C; --_mutedD:#8AA6D8;
+      --_core2:#13294F; --_cardline:#2A4A86; --_chip:#1C3A6E; --_track:#09142A;
+    }
+    .mkff text{font-family:'IBM Plex Sans',system-ui,'Segoe UI',sans-serif}
+    .mkff .mono{font-family:'IBM Plex Mono','SF Mono',ui-monospace,monospace}
+    .mkff .h{font-weight:700;fill:var(--_ink)}
+    .mkff .lbl{font-weight:600;fill:var(--_ink)}
+    .mkff .sub{font-weight:400;fill:var(--_muted)}
+    .mkff .ink{fill:var(--_ink)} .mkff .onDark{fill:var(--_reverse)} .mkff .mutedD{fill:var(--_mutedD)}
+    .mkff .keyed{fill:var(--_accent)} .mkff .bg{fill:var(--_paper)} .mkff .surface{fill:var(--_surface)}
+    .mkff .coreBg{fill:var(--_ground)} .mkff .card{fill:var(--_core2)} .mkff .chip{fill:var(--_chip)} .mkff .track{fill:var(--_track)}
+    .mkff .node{fill:var(--_ink)} .mkff .dot{fill:var(--_blue)} .mkff .edge{stroke:var(--_blue)}
+    .mkff .strokeInk{stroke:var(--_ink)} .mkff .strokeMutedD{stroke:var(--_mutedD)} .mkff .strokeAccent{stroke:var(--_accent)}
+    .mkff .wp circle{fill:var(--_ink)} .mkff .wp text{fill:var(--_reverse);font-weight:700;text-anchor:middle}
+  </style>
+
+  <rect class="bg" width="420" height="940"/>
+  <text class="h" x="24" y="40" font-size="20">How a fact flows</text>
+  <text class="sub" x="24" y="62" font-size="13">Store once, keyed. Graph and vector are derived.</text>
+
+  <!-- rail connecting the waypoints -->
+  <line class="strokeMutedD" x1="44" y1="100" x2="44" y2="812" stroke-width="2" stroke-dasharray="3 6" opacity="0.6"/>
+
+  <!-- ========== (1) emit ========== -->
+  <g class="wp"><circle cx="44" cy="104" r="16"/><text x="44" y="110" font-size="16">1</text></g>
+  <text class="h" x="76" y="100" font-size="17">emit</text>
+  <text class="sub" x="76" y="122" font-size="13">An agent emits a raw fact with the</text>
+  <text class="sub" x="76" y="140" font-size="13">one key it already knows.</text>
+  <rect class="surface strokeInk" x="76" y="152" width="200" height="40" rx="12" stroke-width="1.5"/>
+  <circle cx="98" cy="172" r="9" fill="url(#cring)"/>
+  <text class="lbl" x="116" y="169" font-size="13">Coder</text>
+  <text class="sub" x="116" y="184" font-size="10">writes · recalls</text>
+
+  <!-- ========== (2) key & append ========== -->
+  <g class="wp"><circle cx="44" cy="236" r="16"/><text x="44" y="242" font-size="16">2</text></g>
+  <text class="h" x="76" y="232" font-size="17">key &amp; append</text>
+  <text class="sub" x="76" y="254" font-size="13">The server keys it and appends to the</text>
+  <text class="sub" x="76" y="272" font-size="13">single keyed core — history is kept.</text>
+
+  <!-- superseded ghost + current card -->
+  <g opacity="0.5">
+    <rect class="card strokeCardline" x="80" y="286" width="300" height="118" rx="14" stroke-width="1.5" stroke-dasharray="5 5"/>
+    <circle class="keyed" cx="104" cy="303" r="6"/>
+    <text class="mutedD mono" x="118" y="307" font-size="12">"…pgvector:pg16"</text>
+    <text class="mutedD mono" x="366" y="307" font-size="11" text-anchor="end">superseded</text>
+  </g>
+  <rect class="card strokeCardline" x="92" y="310" width="300" height="118" rx="14" stroke-width="1.5"/>
+  <circle class="keyed" cx="118" cy="342" r="9"/>
+  <path class="keyed" d="M114.3 348.2 L121.7 348.2 L119.7 362 L116.3 362 Z"/>
+  <text class="onDark mono" x="138" y="340" font-size="13" font-weight="700">"use pgvector:pg18"</text>
+  <text class="mutedD" x="138" y="357" font-size="11">keyed value · current</text>
+  <g font-size="11" class="mono">
+    <rect class="chip" x="92" y="374" width="100" height="22" rx="11"/>
+    <text class="onDark" x="142" y="389" text-anchor="middle">project:memkeys</text>
+    <rect class="chip" x="200" y="374" width="78" height="22" rx="11"/>
+    <text class="onDark" x="239" y="389" text-anchor="middle">issue:6319</text>
+  </g>
+  <rect class="track" x="92" y="406" width="300" height="8" rx="4"/>
+  <rect class="keyed" x="92" y="406" width="170" height="8" rx="4" opacity="0.85"/>
+
+  <!-- ========== (3) derive ========== -->
+  <g class="wp"><circle cx="44" cy="472" r="16"/><text x="44" y="478" font-size="16">3</text></g>
+  <text class="h" x="76" y="468" font-size="17">derive</text>
+  <text class="sub" x="76" y="490" font-size="13">Graph and vector views are projected —</text>
+  <text class="sub" x="76" y="508" font-size="13">async, rebuildable, never a second store.</text>
+
+  <!-- graph mini -->
+  <rect class="surface strokeMutedD" x="76" y="520" width="150" height="120" rx="14" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <text class="lbl" x="92" y="544" font-size="13">Graph</text>
+  <g class="edge" stroke-width="2">
+    <line x1="112" y1="600" x2="150" y2="578"/>
+    <line x1="150" y1="578" x2="192" y2="600"/>
+    <line x1="150" y1="578" x2="156" y2="620"/>
+  </g>
+  <circle class="node" cx="112" cy="600" r="9"/>
+  <circle class="keyed" cx="150" cy="578" r="11"/>
+  <circle class="node" cx="192" cy="600" r="9"/>
+  <circle class="node" cx="156" cy="620" r="8"/>
+
+  <!-- vector mini with scope halo -->
+  <rect class="surface strokeMutedD" x="238" y="520" width="150" height="120" rx="14" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <text class="lbl" x="254" y="544" font-size="13">Vector</text>
+  <rect class="chip" x="250" y="554" width="126" height="18" rx="9"/>
+  <text class="onDark mono" x="313" y="567" font-size="9.5" text-anchor="middle">scope: project:memkeys</text>
+  <circle class="keyed" cx="313" cy="606" r="24" opacity="0.10"/>
+  <circle class="strokeAccent" cx="313" cy="606" r="24" fill="none" stroke-width="1.5" stroke-dasharray="4 4"/>
+  <circle class="keyed" cx="313" cy="606" r="6"/>
+  <g class="dot"><circle cx="298" cy="596" r="4"/><circle cx="328" cy="598" r="4"/><circle cx="304" cy="620" r="4"/></g>
+
+  <!-- ========== (4) retrieve ========== -->
+  <g class="wp"><circle cx="44" cy="690" r="16"/><text x="44" y="696" font-size="16">4</text></g>
+  <text class="h" x="76" y="686" font-size="17">retrieve</text>
+  <text class="sub" x="76" y="708" font-size="13">Read back by key, by scoped search, or</text>
+  <text class="sub" x="76" y="726" font-size="13">by graph hop — the four-op contract.</text>
+
+  <rect class="surface strokeInk" x="76" y="738" width="312" height="150" rx="14" stroke-width="1.5"/>
+  <g>
+    <text class="lbl mono" x="96" y="766" font-size="14">Store</text>
+    <text class="sub" x="200" y="766" font-size="12">write a fact, keyed</text>
+    <line class="strokeInk" x1="92" y1="778" x2="372" y2="778" stroke-width="1" opacity="0.18"/>
+    <text class="lbl mono" x="96" y="800" font-size="14">Fetch</text>
+    <text class="sub" x="200" y="800" font-size="12">by the keys you know</text>
+    <line class="strokeInk" x1="92" y1="812" x2="372" y2="812" stroke-width="1" opacity="0.18"/>
+    <text class="lbl mono" x="96" y="834" font-size="14">Search</text>
+    <text class="sub" x="200" y="834" font-size="12">semantic, within a scope</text>
+    <line class="strokeInk" x1="92" y1="846" x2="372" y2="846" stroke-width="1" opacity="0.18"/>
+    <text class="lbl mono" x="96" y="868" font-size="14">Traverse</text>
+    <text class="sub" x="200" y="868" font-size="12">hop the graph</text>
+  </g>
+
+  <text class="sub" x="210" y="916" font-size="12" text-anchor="middle">Not three copies to keep in sync.</text>
+</svg>
