@@ -1,6 +1,6 @@
 ---
 title: Quickstart
-description: Run the MemKeys memory server locally in five minutes — cargo or Docker — store your first fact, and fetch it back by key.
+description: Run the MemKeys memory server — cargo, Docker, or Kubernetes — store your first fact, and fetch it back by key. Pick a path; follow only that path.
 template: splash
 editUrl: false
 hero:
@@ -13,61 +13,207 @@ hero:
       variant: minimal
 ---
 
-import { Steps, LinkCard } from '@astrojs/starlight/components';
+import { Steps, LinkCard, Tabs, TabItem } from '@astrojs/starlight/components';
 
-## Prerequisites
+Every path below ends at the same place: a store→fetch round trip that returns
+your fact **by its keys, not by similarity**. Each path needs **Postgres with
+[pgvector](https://github.com/pgvector/pgvector)** — the server runs a
+`CREATE EXTENSION vector` migration at boot and preflights for it, so stock
+`postgres:*` images fail fast with a clear message.
 
-- A **Rust toolchain** (1.80+) for the cargo path, or **Docker**.
-- **Postgres with [pgvector](https://github.com/pgvector/pgvector)** — the
-  server runs a `CREATE EXTENSION vector` migration at boot and preflights
-  for it; stock `postgres:*` images fail fast with a clear message.
-- For the Kubernetes path: a cluster ≥ 1.27 and Helm 3.
+## Pick your path
 
-## Path A — local dev with cargo (5 minutes)
+<Tabs syncKey="install">
+  <TabItem label="cargo" icon="seti:rust">
 
-<Steps>
-  1. **Run Postgres with pgvector.**
+    **You need:** a Rust toolchain (1.80+) and Docker for Postgres. ~5 minutes.
 
-       ```bash
-       docker run -d --name memkeys-pg \
-         -e POSTGRES_PASSWORD=memkeys \
-         -p 5432:5432 pgvector/pgvector:pg16
-       ```
+    <Steps>
+      1. **Run Postgres with pgvector.**
 
-  2. **Run the server from the repo.** Loopback dev mode self-asserts the
-     tenant; the memory API binds `:3000`, health `:8080`, MCP runs on stdio.
+           ```bash
+           docker run -d --name memkeys-pg \
+             -e POSTGRES_PASSWORD=memkeys \
+             -p 5432:5432 pgvector/pgvector:pg16
+           ```
 
-       ```bash
-       export MEMKEYS_DATABASE_URL=postgres://postgres:memkeys@localhost:5432/postgres
-       cargo run -p memkeys-server
-       ```
+      2. **Run the server from the repo.** Loopback dev mode self-asserts the
+         tenant; the memory API binds `:3000`, health `:8080`, MCP runs on stdio.
 
-  3. **Store a fact.** The only thing only you can supply is the body — send
-     the keys you know and the server models the rest.
+           ```bash
+           export MEMKEYS_DATABASE_URL=postgres://postgres:memkeys@localhost:5432/postgres
+           cargo run -p memkeys-server
+           ```
 
-       ```bash
-       curl -s localhost:3000/memory/facts \
-         -H 'content-type: application/json' \
-         -H 'X-MemKeys-Tenant: default' \
-         -d '{
-           "source": { "kind": "gateway_flush", "emitted_at": "2026-10-23T09:00:00Z" },
-           "entity": { "project": "demo", "agent": "you", "run": "run-1" },
-           "fact":   { "body": "deploy freeze starts Friday", "subject": "freeze" }
-         }'
-       ```
+      3. **Store a fact.** The only thing only you can supply is the body — send
+         the keys you know and the server models the rest.
 
-       The response carries the server-resolved keys — cache them for later reads.
+           ```bash
+           curl -s localhost:3000/memory/facts \
+             -H 'content-type: application/json' \
+             -H 'X-MemKeys-Tenant: default' \
+             -d '{
+               "source": { "kind": "gateway_flush", "emitted_at": "2026-10-23T09:00:00Z" },
+               "entity": { "project": "demo", "agent": "you", "run": "run-1" },
+               "fact":   { "body": "deploy freeze starts Friday", "subject": "freeze" }
+             }'
+           ```
 
-  4. **Fetch it back — by key, not by similarity.**
+      4. **Fetch it back — by key, not by similarity.**
 
-       ```bash
-       curl -s 'localhost:3000/memory/facts?entity.project=demo' \
-         -H 'X-MemKeys-Tenant: default'
-       ```
+           ```bash
+           curl -s 'localhost:3000/memory/facts?entity.project=demo' \
+             -H 'X-MemKeys-Tenant: default'
+           ```
+    </Steps>
 
-       Deterministic: same key, same set, no ranking drift. That is the
-       whole idea.
-</Steps>
+    <div class="mk-checkpoint">
+
+    **You'll know it worked** — the fetch returns the fact you stored, carrying
+    the server-resolved keys. Same key, same set, no ranking drift:
+
+    ```json frame="terminal" title="GET /memory/facts?entity.project=demo"
+    {
+      "facts": [
+        {
+          "fact_id": "01JB…",
+          "entity": { "project": "demo", "agent": "you", "run": "run-1" },
+          "fact":   { "body": "deploy freeze starts Friday", "subject": "freeze" },
+          "valid_from": "2026-10-23T09:00:00Z"
+        }
+      ]
+    }
+    ```
+
+    </div>
+
+  </TabItem>
+  <TabItem label="Docker" icon="seti:docker">
+
+    **You need:** Docker only. The server image bundles the Inspector and
+    serves it at `/` on the memory port — no Rust toolchain, no frontend dev
+    server.
+
+    <Steps>
+      1. **Run Postgres with pgvector.**
+
+           ```bash
+           docker run -d --name memkeys-pg \
+             -e POSTGRES_PASSWORD=memkeys -p 5432:5432 pgvector/pgvector:pg16
+           ```
+
+      2. **Run the server.** By default the server binds loopback only and
+         *refuses* a non-loopback bind without a run-token verifier. A published
+         container port needs `0.0.0.0`, so pair it with the explicit dev opt-in
+         (`MEMKEYS_ALLOW_INSECURE=1` — loud warning, dev only). Anything shared
+         beyond your machine should mint run tokens instead; see
+         [configuration](/memkeys-website/docs/configuration/).
+
+           ```bash
+           docker run --name memkeys -p 3000:3000 \
+             -e MEMKEYS_DATABASE_URL=postgres://postgres:memkeys@host.docker.internal:5432/postgres \
+             -e MEMKEYS_HTTP_HOST=0.0.0.0 -e MEMKEYS_ALLOW_INSECURE=1 \
+             ghcr.io/memkeys/memkeys-server
+           ```
+
+           On Linux, add `--add-host=host.docker.internal:host-gateway` if the
+           container cannot resolve the host.
+
+      3. **Store a fact.**
+
+           ```bash
+           curl -s localhost:3000/memory/facts \
+             -H 'content-type: application/json' \
+             -H 'X-MemKeys-Tenant: default' \
+             -d '{
+               "source": { "kind": "gateway_flush", "emitted_at": "2026-10-23T09:00:00Z" },
+               "entity": { "project": "demo", "agent": "you", "run": "run-1" },
+               "fact":   { "body": "deploy freeze starts Friday", "subject": "freeze" }
+             }'
+           ```
+
+      4. **Fetch it back — by key, not by similarity.**
+
+           ```bash
+           curl -s 'localhost:3000/memory/facts?entity.project=demo' \
+             -H 'X-MemKeys-Tenant: default'
+           ```
+    </Steps>
+
+    <div class="mk-checkpoint">
+
+    **You'll know it worked** — open [http://localhost:3000](http://localhost:3000)
+    for the bundled Inspector, and the same fetch returns your fact:
+
+    ```json frame="terminal" title="GET /memory/facts?entity.project=demo"
+    {
+      "facts": [
+        {
+          "fact_id": "01JB…",
+          "entity": { "project": "demo", "agent": "you", "run": "run-1" },
+          "fact":   { "body": "deploy freeze starts Friday", "subject": "freeze" }
+        }
+      ]
+    }
+    ```
+
+    </div>
+
+  </TabItem>
+  <TabItem label="Kubernetes" icon="seti:kubernetes">
+
+    **You need:** a cluster ≥ 1.27, Helm 3, and a reachable Postgres with
+    pgvector. The chart ships as a public OCI artifact; the operator adds a
+    `MemKeysInstance` CRD for GitOps-style management.
+
+    <Steps>
+      1. **Install the chart.** The run-token secret backs the non-loopback bind.
+
+           ```bash
+           kubectl create secret generic memkeys-run-token \
+             --from-literal=MEMKEYS_RUN_TOKEN_SECRET=dev-secret
+
+           helm install memkeys oci://ghcr.io/memkeys/charts/memkeys \
+             --set database.url="postgres://user:pass@host:5432/memkeys" \
+             --set memoryTransport.runTokenSecret.existingSecret=memkeys-run-token
+           ```
+
+      2. **Wait for the pod, then port-forward the memory API.**
+
+           ```bash
+           kubectl rollout status deploy/memkeys
+           kubectl port-forward svc/memkeys 3000:3000
+           ```
+
+      3. **Store, then fetch** — the same round trip as every other path, against
+         `localhost:3000` through the port-forward.
+
+           ```bash
+           curl -s localhost:3000/memory/facts \
+             -H 'content-type: application/json' -H 'X-MemKeys-Tenant: default' \
+             -d '{"source":{"kind":"gateway_flush","emitted_at":"2026-10-23T09:00:00Z"},"entity":{"project":"demo","agent":"you","run":"run-1"},"fact":{"body":"deploy freeze starts Friday","subject":"freeze"}}'
+
+           curl -s 'localhost:3000/memory/facts?entity.project=demo' -H 'X-MemKeys-Tenant: default'
+           ```
+    </Steps>
+
+    <div class="mk-checkpoint">
+
+    **You'll know it worked** — the deployment goes Ready and the fetch returns
+    your fact through the port-forward:
+
+    ```ansi frame="terminal" title="kubectl rollout status deploy/memkeys"
+    deployment "memkeys" successfully rolled out
+    ```
+
+    </div>
+
+    Profiles (`single-node` default, `microservice` with dedicated projection
+    workers), the operator CRD, and the full spec reference:
+    **[Kubernetes: Helm + operator](/memkeys-website/docs/k8s-operator/)**.
+
+  </TabItem>
+</Tabs>
 
 The same round trip exists as MCP tools (`memory_store`, `memory_fetch`,
 `memory_search`, `memory_traverse`) over stdio, so an agent makes it with a
@@ -77,7 +223,9 @@ config block — see [connect an agent](#connect-an-agent) below and the
 ## Browse memory in the Inspector
 
 The read-only Inspector UI talks only to the public read surface — never to
-the database, never writes.
+the database, never writes. The **Docker** and **Kubernetes** paths already
+serve it at `/` on the memory port; for the **cargo** path, run it from the
+repo:
 
 ```bash
 cd frontend
@@ -85,54 +233,8 @@ npm install
 npm run dev    # :3001, proxies /memory → :3000
 ```
 
-Open [http://localhost:3001](http://localhost:3001), set the **Tenant** field
-(default tenant: `default`), then browse facts by entity attributes or walk
-the graph from any node.
-
-## Path B — Docker
-
-The server image bundles the Inspector and serves it at `/` on the memory
-port, so this path needs no frontend dev server.
-
-```bash
-docker run -d --name memkeys-pg \
-  -e POSTGRES_PASSWORD=memkeys -p 5432:5432 pgvector/pgvector:pg16
-
-docker run --name memkeys -p 3000:3000 \
-  -e MEMKEYS_DATABASE_URL=postgres://postgres:memkeys@host.docker.internal:5432/postgres \
-  -e MEMKEYS_HTTP_HOST=0.0.0.0 -e MEMKEYS_ALLOW_INSECURE=1 \
-  ghcr.io/memkeys/memkeys-server
-```
-
-The bind flags matter: by default the server binds loopback only, and it
-*refuses* a non-loopback bind without a run-token verifier. In a container,
-`-p 3000:3000` needs `0.0.0.0`, so the quickstart pairs it with the explicit
-dev opt-in (`MEMKEYS_ALLOW_INSECURE=1` — loud warning, dev only). Anything
-shared beyond your machine should mint run tokens instead: see
-[configuration](/memkeys-website/docs/configuration/).
-
-Then open [http://localhost:3000](http://localhost:3000) for the Inspector,
-and run the same store/fetch round trip as Path A. (On Linux, add
-`--add-host=host.docker.internal:host-gateway` if the container cannot
-resolve it.)
-
-## Path C — Kubernetes
-
-The chart ships as a public OCI artifact; the operator adds a
-`MemKeysInstance` CRD for GitOps-style management.
-
-```bash
-kubectl create secret generic memkeys-run-token \
-  --from-literal=MEMKEYS_RUN_TOKEN_SECRET=dev-secret
-
-helm install memkeys oci://ghcr.io/memkeys/charts/memkeys \
-  --set database.url="postgres://user:pass@host:5432/memkeys" \
-  --set memoryTransport.runTokenSecret.existingSecret=memkeys-run-token
-```
-
-Profiles (`single-node` default, `microservice` with dedicated projection
-workers), the operator CRD, and the full spec reference:
-**[Kubernetes: Helm + operator](/memkeys-website/docs/k8s-operator/)**.
+Open the Inspector, set the **Tenant** field (default tenant: `default`), then
+browse facts by entity attributes or walk the graph from any node.
 
 ## Connect an agent
 

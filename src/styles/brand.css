@@ -441,3 +441,79 @@ footer .meta::after {
   outline: 2px solid var(--sl-color-accent);
   outline-offset: 2px;
 }
+
+/* ---------------------------------------------------------------------------
+ * Quickstart: path chooser (segmented control) + success checkpoints
+ * The <Tabs> path chooser reads as a segmented control; the active path is
+ * the one keyed thing, so it carries the gold fill (with ink text — never gold
+ * as label text on paper). Success checkpoints read as terminal cards.
+ * ------------------------------------------------------------------------- */
+
+/* Segmented control: the tablist becomes a single pill holding the choices. */
+.sl-markdown-content starlight-tabs .tablist {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  padding: 0.3rem;
+  margin-bottom: 1.25rem;
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+  border-radius: 16px; /* radius ladder: 16 */
+  background: color-mix(in srgb, var(--sl-color-accent-low) 35%, transparent);
+}
+.sl-markdown-content starlight-tabs .tablist::after {
+  content: none; /* drop Starlight's baseline rule — the pill is the frame */
+}
+.sl-markdown-content starlight-tabs [role='tab'] {
+  border: 0;
+  border-radius: 10px; /* radius ladder: 10 */
+  padding: 0.4rem 0.95rem;
+  font-weight: 600;
+  color: var(--sl-color-text);
+  transition: background 120ms ease, color 120ms ease;
+}
+.sl-markdown-content starlight-tabs [role='tab']:hover {
+  background: color-mix(in srgb, var(--sl-color-accent) 18%, transparent);
+}
+/* The selected path is the keyed thing: gold fill, ink text (compliant — gold
+ * as a fill behind ink, never as label text on paper). */
+.sl-markdown-content starlight-tabs [role='tab'][aria-selected='true'] {
+  background: var(--mk-accent);
+  color: var(--mk-ink);
+}
+.sl-markdown-content starlight-tabs [role='tab'][aria-selected='true']:hover {
+  background: #ffd866;
+  color: var(--mk-ink);
+}
+
+/* Success checkpoint — "you'll know it worked" — as a terminal-adjacent card
+ * struck on the left with the gold key stroke (>= 2px: compliant gold use). */
+.mk-checkpoint {
+  border: 1px solid color-mix(in srgb, var(--sl-color-accent) 28%, transparent);
+  border-inline-start: 3px solid var(--mk-accent);
+  border-radius: 16px; /* radius ladder: 16 */
+  background: color-mix(in srgb, var(--sl-color-accent-low) 22%, transparent);
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0 1.75rem;
+}
+.mk-checkpoint > :first-child {
+  margin-top: 0;
+}
+.mk-checkpoint > :last-child {
+  margin-bottom: 0;
+}
+/* Gold check badge before the "You'll know it worked" label — a gold disc with
+ * an ink glyph (fill-with-ink, never gold text on paper). */
+.mk-checkpoint > p:first-child strong:first-child::before {
+  content: '✓';
+  display: inline-grid;
+  place-items: center;
+  width: 1.4em;
+  height: 1.4em;
+  margin-inline-end: 0.5em;
+  border-radius: 999px;
+  background: var(--mk-accent);
+  color: var(--mk-ink);
+  font-size: 0.85em;
+  font-weight: 700;
+  vertical-align: -0.3em;
+}
