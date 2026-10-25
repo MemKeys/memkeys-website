@@ -1,0 +1,54 @@
+---
+// FactFlow — the fact-flow poster, inlined so the page's --mk-* brand tokens
+// theme its fills and so it scales fluidly. The full stage shows >=860px; a
+// board-approved compact one-column variant shows below that (not a shrunk
+// stage), readable down to 360px. No JavaScript — the swap is pure CSS. Both
+// SVGs scope their internal styles under .mkff so nothing leaks onto the page.
+import fullSvg from '../assets/landing/architecture.svg?raw';
+import compactSvg from '../assets/landing/architecture-compact.svg?raw';
+
+interface Props {
+  /** Optional caption rendered under the figure. */
+  caption?: string;
+}
+const { caption } = Astro.props;
+---
+
+<figure class="factflow">
+  <div class="ff-stage ff-full" set:html={fullSvg} />
+  <div class="ff-stage ff-compact" set:html={compactSvg} />
+  {caption && <figcaption>{caption}</figcaption>}
+</figure>
+
+<style>
+  .factflow {
+    margin: 1.75rem 0;
+  }
+  /* The inlined SVGs are not scoped by Astro's component hashing, so target
+     them globally but only within this figure. */
+  .factflow :global(svg) {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 16px;
+  }
+  .ff-compact {
+    display: none;
+  }
+  @media (max-width: 860px) {
+    .ff-full {
+      display: none;
+    }
+    .ff-compact {
+      display: block;
+      max-width: 420px;
+      margin-inline: auto;
+    }
+  }
+  figcaption {
+    margin-top: 0.6rem;
+    font-size: 0.9rem;
+    color: var(--sl-color-gray-3, #6b7a99);
+    text-align: center;
+  }
+</style>

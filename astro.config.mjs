@@ -33,6 +33,7 @@ const sidebar = [
       { label: 'What is MemKeys', slug: 'docs/what-is-memkeys' },
       { label: 'Architecture', slug: 'docs/architecture' },
       { label: 'Instance requirements', slug: 'docs/instance-requirements' },
+      { label: 'Fact-flow diagram', slug: 'docs/fact-flow' },
     ],
   },
   {
