@@ -83,6 +83,21 @@
   color: var(--sl-color-accent);
 }
 
+/* The landing hero is a locked dark band in both themes. In the dark theme the
+ * page ground is already #0B1830, so this is a no-op there; in the light theme
+ * it keeps the hero on the dark ground the hero visual was designed for, so its
+ * golden keyed text never lands on a paper ground (which would fail contrast). */
+:root[data-theme='light'] [data-has-hero] .hero {
+  background: var(--mk-ground);
+  border-radius: 24px;
+  padding: clamp(1.5rem, 4vw, 3rem);
+}
+:root[data-theme='light'] [data-has-hero] .hero .copy,
+:root[data-theme='light'] [data-has-hero] .hero .copy h1,
+:root[data-theme='light'] [data-has-hero] .hero .tagline {
+  color: var(--mk-reverse);
+}
+
 /* ---------------------------------------------------------------------------
  * Typography
  * ------------------------------------------------------------------------- */

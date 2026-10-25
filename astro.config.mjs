@@ -31,6 +31,7 @@ const sidebar = [
     items: [
       { label: 'What is MemKeys', slug: 'docs/what-is-memkeys' },
       { label: 'Architecture', slug: 'docs/architecture' },
+      { label: 'Fact-flow diagram', slug: 'docs/fact-flow' },
     ],
   },
   {

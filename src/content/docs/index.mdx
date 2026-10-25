@@ -8,8 +8,8 @@ hero:
   heading: Every fact has an address.
   subhead: MemKeys is an open-source, attribute-based memory server for AI agents. Store each fact by the keys that describe it — with a validity window — and retrieve it by address. No vector guesswork.
   image:
-    file: ../../assets/hero-mark.svg
-    alt: The MemKeys mark — a gradient @ with a golden keyhole center.
+    file: ../../assets/landing/hero-visual.svg
+    alt: A query travels along an address and resolves to one keyed fact inside the MemKeys mark.
   actions:
     # NB: Starlight does not prefix the Pages base onto hero action links, so
     # the base (/memkeys) is included explicitly. Keep in sync with BASE in
@@ -28,6 +28,8 @@ hero:
 ---
 
 import { Card, CardGrid, LinkCard, LinkButton } from '@astrojs/starlight/components';
+import FactFlow from '../../components/FactFlow.astro';
+import StepGrid from '../../components/StepGrid.astro';
 
 ## What is MemKeys?
 
@@ -69,6 +71,8 @@ of that keyed core so you still get relationship traversal and semantic search, 
 MemKeys is organized as **one source of truth and two derived views**, reached through **four
 retrieval operations**.
 
+<FactFlow caption="A fact emitted by an agent (1) is keyed and appended to the single keyed core (2); graph and vector views are derived from it (3); agents retrieve by key, by scoped search, or by graph traversal (4)." />
+
 **Storage — single source of truth + derived views:**
 - **Keyed / temporal store (source of truth).** Every fact lives here once, append-only and
   bi-temporal. This is what the server writes at commit time.
@@ -86,6 +90,12 @@ retrieval operations**.
 The same four operations are exposed over HTTP and over MCP (stdio), so Claude Code, goose,
 kagent — or your own client — use MemKeys as their memory server with a config block, not an
 integration project.
+
+## How to use
+
+Three steps from zero to a memory your agents share.
+
+<StepGrid />
 
 ## Run it in five minutes
 
